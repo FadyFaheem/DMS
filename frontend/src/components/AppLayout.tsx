@@ -63,9 +63,11 @@ export default function AppLayout() {
       ) {
         return section;
       }
-      if (section.tabs?.some((t) =>
-        location.pathname === t.path || location.pathname.startsWith(t.path + '/'),
-      )) {
+      if (
+        section.tabs?.some(
+          (t) => location.pathname === t.path || location.pathname.startsWith(t.path + '/'),
+        )
+      ) {
         return section;
       }
     }
@@ -80,7 +82,15 @@ export default function AppLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <AppBar position="static" sx={{ flexShrink: 0 }}>
         <Container maxWidth={false}>
           <Toolbar disableGutters>
@@ -260,10 +270,7 @@ export default function AppLayout() {
                           }}
                         />
                       ) : (
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: isActive ? 700 : 400 }}
-                        >
+                        <Typography variant="body2" sx={{ fontWeight: isActive ? 700 : 400 }}>
                           {tab.label.charAt(0)}
                         </Typography>
                       )}
@@ -274,13 +281,20 @@ export default function AppLayout() {
             </List>
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
               <IconButton size="small" onClick={() => setSidebarOpen((v) => !v)}>
-                {sidebarOpen ? <ChevronLeftIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+                {sidebarOpen ? (
+                  <ChevronLeftIcon fontSize="small" />
+                ) : (
+                  <ChevronRightIcon fontSize="small" />
+                )}
               </IconButton>
             </Box>
           </Box>
         )}
 
-        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}>
+        <Box
+          component="main"
+          sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}
+        >
           <Outlet />
         </Box>
       </Box>

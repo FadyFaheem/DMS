@@ -7,9 +7,7 @@ describe('apiJson', () => {
   });
 
   it('returns parsed JSON on success', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     const data = await apiJson<{ ok: boolean }>('/api/thing');
     expect(data.ok).toBe(true);
   });
