@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: project-dev-pod
+spec:
+  # DNS configuration - ensures DNS resolution works properly
+  dnsPolicy: "None"
+  dnsConfig:
+    nameservers:
+      - "8.8.8.8"      # Google DNS
+      - "8.8.4.4"      # Google DNS backup
+      - "1.1.1.1"      # Cloudflare DNS
+    searches:
+      - "."
+    options:
+      - name: ndots
+        value: "2"
+      - name: edns0
+  # Restart policy: OnFailure = restart container if it crashes (non-zero exit)
+  # Options: Never, OnFailure, Always
+  restartPolicy: OnFailure
+  containers:
+    # PostgreSQL Database
+    - name: postgres-db
+      image: docker.io/postgres:latest
+      env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - name: POSTGRES_DB
+          value: project-dev-db
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql
+        - name: db-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+
+    # Flask API (Python-based)
+    - name: flask-api
+      image: docker.io/python:3.11-slim
+      command: ["/bin/sh"]
+      args: ["-c", "pip install --quiet --no-cache-dir -r /app/requirements.txt && exec python /app/app.py"]
+      env:
+        - name: DB_HOST
+          value: localhost
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: project-dev-db
+        - name: DB_USER
+          value: postgres
+        - name: DB_PASSWORD
+          value: postgres
+        - name: FLASK_ENV
+          value: development
+        - name: PORT
+          value: "5000"
+        # Secrets -- override for any non-local use.
+        - name: SECRET_KEY
+          value: dev-secret-key-change-in-production
+        - name: JWT_SECRET_KEY
+          value: dev-jwt-secret-change-in-production
+        # Tells db.run_migrations() where to find numbered SQL migrations.
+        - name: MIGRATIONS_DIR
+          value: /migrations
+      ports:
+        - containerPort: 5000
+          hostPort: 5000
+      volumeMounts:
+        - name: api-code
+          mountPath: /app
+          readOnly: true
+        - name: db-init
+          mountPath: /migrations
+          readOnly: true
+        # Mount host resolv.conf for DNS resolution
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # React Frontend (Node.js with Vite)
+    - name: react-frontend
+      image: docker.io/node:20-alpine
+      command: ["/bin/sh"]
+      args: ["-c", "cd /app && npm install && npm run dev -- --host 0.0.0.0 --port 3000"]
+      env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "3000"
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+      volumeMounts:
+        - name: frontend-code
+          mountPath: /app
+        # Mount host resolv.conf for DNS resolution
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # Cloudflare Tunnel — exposes dev environment via cloudflared.
+    # No inbound ports needed; cloudflared establishes outbound connections to Cloudflare's edge.
+    # Setup: see infra/cloudflared/config.yml for one-time instructions.
+    - name: cloudflared
+      image: cloudflare/cloudflared:latest
+      command: ["cloudflared"]
+      args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "run"]
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: cloudflared-config
+          mountPath: /etc/cloudflared
+
+  volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+        claimName: project-dev-db-data-claim
+    - name: db-init
+      hostPath:
+        # TODO: Update this path to match your project location
+        # Windows WSL: /mnt/c/PATH/TO/PROJECT/infra/database
+        # Linux: /path/to/project/infra/database
+        # macOS: /Users/username/path/to/project/infra/database
+        path: /mnt/c/PROJECT_NAME/infra/database
+        type: Directory
+    - name: api-code
+      hostPath:
+        # TODO: Update this path to match your project location
+        path: /mnt/c/PROJECT_NAME/infra/api
+        type: Directory
+    - name: frontend-code
+      hostPath:
+        # TODO: Update this path to match your project location
+        path: /mnt/c/PROJECT_NAME/frontend
+        type: Directory
+    # Mount host resolv.conf for DNS resolution
+    - name: host-resolv
+      hostPath:
+        path: /etc/resolv.conf
+        type: File
+    # Cloudflare Tunnel configuration and credentials
+    - name: cloudflared-config
+      hostPath:
+        # TODO: Update this path to match your project location
+        path: /mnt/c/PROJECT_NAME/infra/cloudflared
+        type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: project-dev-db-data-claim
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

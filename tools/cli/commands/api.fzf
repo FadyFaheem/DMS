@@ -1,0 +1,32 @@
+#View Flask API logs
+podman logs project-dev-pod-flask-api
+
+#Follow Flask API logs in real-time
+podman logs -f project-dev-pod-flask-api
+
+#Test Flask API health endpoint
+curl http://localhost:5000/health
+
+#Restart Flask API container only
+podman restart project-dev-pod-flask-api
+
+#View Flask API container resource usage
+podman stats project-dev-pod-flask-api --no-stream
+
+#Check Flask API container details
+podman inspect project-dev-pod-flask-api
+
+#Pretty print API health response
+curl -s http://localhost:5000/health | python -m json.tool || curl -s http://localhost:5000/health | python3 -m json.tool
+
+#Login as admin (default credentials, prints tokens)
+curl -s -X POST http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}' | python -m json.tool || curl -s -X POST http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}' | python3 -m json.tool
+
+#Get current user (paste access_token from login response)
+read -p "Enter access token: " token && curl -s http://localhost:5000/api/auth/me -H "Authorization: Bearer $token" | python -m json.tool || curl -s http://localhost:5000/api/auth/me -H "Authorization: Bearer $token" | python3 -m json.tool
+
+#List users (admin, paste access_token from login response)
+read -p "Enter admin access token: " token && curl -s http://localhost:5000/api/auth/users -H "Authorization: Bearer $token" | python -m json.tool || curl -s http://localhost:5000/api/auth/users -H "Authorization: Bearer $token" | python3 -m json.tool
+
+#Open a Python shell inside the API container
+podman exec -it project-dev-pod-flask-api python

@@ -1,0 +1,39 @@
+#Access PostgreSQL database
+podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db
+
+#Check migration status
+podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "SELECT version, applied_at FROM schema_migrations ORDER BY version;"
+
+#Run migrations manually (if needed)
+ls infra/database/*.sql | sort | grep -v '/000' | xargs -I{} sh -c 'echo "-- Running {}"; cat "{}"' | podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db
+
+#Run specific migration file
+read -p "Enter migration filename (e.g., 001-schema.sql): " filename && podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db < infra/database/$filename
+
+#Check database tables
+podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "\dt"
+
+#Check database size
+podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "SELECT pg_size_pretty(pg_database_size('project-dev-db'));"
+
+#List all databases
+podman exec -it project-dev-pod-postgres-db psql -U postgres -c "\l"
+
+#View database initialization logs
+podman logs project-dev-pod-postgres-db
+
+#List SQL migration files in order
+ls infra/database/*.sql | sort
+
+#Test database connection
+podman exec -it project-dev-pod-postgres-db pg_isready -U postgres
+
+#Backup database
+podman exec -it project-dev-pod-postgres-db pg_dump -U postgres -d project-dev-db > backup.sql
+
+#Restore database from backup
+read -p "Enter backup filename: " backupfile && podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db < $backupfile
+
+#Create new migration file template
+read -p "Enter migration number (e.g., 002): " migrationNum; read -p "Enter migration name: " migrationName; fileName="infra/database/${migrationNum}-${migrationName}.sql"; printf "-- %s-%s.sql\n\n-- Check if this migration has already been applied\nINSERT INTO schema_migrations (version) VALUES ('%s-%s') ON CONFLICT (version) DO NOTHING;\n\n-- Your migration code here\n\n-- Log completion\n\\\\echo '%s-%s migration completed successfully'\n" "$migrationNum" "$migrationName" "$migrationNum" "$migrationName" "$migrationNum" "$migrationName" > "$fileName"; echo "Created: $fileName"
+
