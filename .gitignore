@@ -57,3 +57,9 @@ logs/
 
 # Cloudflare tunnel credentials (also covered by infra/cloudflared/creds/.gitignore)
 infra/cloudflared/creds/*.json
+
+# Rails API (api/)
+/api/tmp/
+/api/log/
+/api/config/master.key
+/api/storage/
