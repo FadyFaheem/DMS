@@ -1,0 +1,17 @@
+#Lint the Rails API (RuboCop)
+cd api && bundle exec rubocop
+
+#Auto-fix Rails API offenses (RuboCop -A)
+cd api && bundle exec rubocop -A
+
+#Lint the frontend (ESLint)
+cd frontend && npm run lint
+
+#Check frontend formatting (Prettier)
+cd frontend && npm run format:check
+
+#Format the frontend (Prettier --write)
+cd frontend && npm run format
+
+#Lint + format-check everything (RuboCop + ESLint + Prettier)
+cd api && bundle exec rubocop && cd ../frontend && npm run lint && npm run format:check

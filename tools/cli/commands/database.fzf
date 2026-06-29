@@ -1,14 +1,23 @@
-#Access PostgreSQL database
+#Access PostgreSQL database (dev)
 podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db
 
-#Check migration status
-podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "SELECT version, applied_at FROM schema_migrations ORDER BY version;"
+#Check Rails migration version
+podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:version
 
-#Run migrations manually (if needed)
-ls infra/database/*.sql | sort | grep -v '/000' | xargs -I{} sh -c 'echo "-- Running {}"; cat "{}"' | podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db
+#Run pending Rails migrations
+podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:migrate
 
-#Run specific migration file
-read -p "Enter migration filename (e.g., 001-schema.sql): " filename && podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db < infra/database/$filename
+#Prepare the database (create + migrate + seed if new)
+podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:prepare
+
+#Seed the database
+podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:seed
+
+#Open the Rails database console
+podman exec -w /app -it project-dev-pod-rails-api bundle exec rails dbconsole
+
+#Generate a new Rails migration
+read -p "Enter migration name (e.g., create_widgets): " name && podman exec -w /app -it project-dev-pod-rails-api bundle exec rails generate migration "$name"
 
 #Check database tables
 podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "\dt"
@@ -19,11 +28,8 @@ podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -
 #List all databases
 podman exec -it project-dev-pod-postgres-db psql -U postgres -c "\l"
 
-#View database initialization logs
+#View database container logs
 podman logs project-dev-pod-postgres-db
-
-#List SQL migration files in order
-ls infra/database/*.sql | sort
 
 #Test database connection
 podman exec -it project-dev-pod-postgres-db pg_isready -U postgres
@@ -33,7 +39,3 @@ podman exec -it project-dev-pod-postgres-db pg_dump -U postgres -d project-dev-d
 
 #Restore database from backup
 read -p "Enter backup filename: " backupfile && podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db < $backupfile
-
-#Create new migration file template
-read -p "Enter migration number (e.g., 002): " migrationNum; read -p "Enter migration name: " migrationName; fileName="infra/database/${migrationNum}-${migrationName}.sql"; printf "-- %s-%s.sql\n\n-- Check if this migration has already been applied\nINSERT INTO schema_migrations (version) VALUES ('%s-%s') ON CONFLICT (version) DO NOTHING;\n\n-- Your migration code here\n\n-- Log completion\n\\\\echo '%s-%s migration completed successfully'\n" "$migrationNum" "$migrationName" "$migrationNum" "$migrationName" "$migrationNum" "$migrationName" > "$fileName"; echo "Created: $fileName"
-

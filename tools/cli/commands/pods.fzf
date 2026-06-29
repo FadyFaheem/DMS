@@ -1,11 +1,11 @@
 #Pre-pull required images (fixes TLS certificate issues)
-podman pull --tls-verify=false docker.io/library/node:20-alpine && podman pull --tls-verify=false docker.io/library/postgres:latest && podman pull --tls-verify=false docker.io/library/python:3.11-slim && podman pull --tls-verify=false docker.io/cloudflare/cloudflared:latest
+podman pull --tls-verify=false docker.io/library/node:20-alpine && podman pull --tls-verify=false docker.io/library/postgres:latest && podman pull --tls-verify=false docker.io/library/ruby:3.3 && podman pull --tls-verify=false docker.io/cloudflare/cloudflared:latest
 
 #Start project-dev pod
-podman play kube infra/podman/project-dev.yaml
+podman play kube podman/project-dev.yaml
 
 #Start project-prod pod
-podman play kube infra/podman/project-prod.yaml
+podman play kube podman/project-prod.yaml
 
 #Stop project-dev pod
 podman pod stop project-dev-pod
@@ -26,16 +26,16 @@ podman pod rm -f project-dev-pod && podman volume rm project-dev-db-data-claim
 podman pod rm -f project-prod-pod && podman volume rm project-prod-db-data-claim
 
 #Rebuild project-dev pod
-podman pod rm -f project-dev-pod && podman play kube infra/podman/project-dev.yaml
+podman pod rm -f project-dev-pod && podman play kube podman/project-dev.yaml
 
 #Rebuild project-prod pod
-podman pod rm -f project-prod-pod && podman play kube infra/podman/project-prod.yaml
+podman pod rm -f project-prod-pod && podman play kube podman/project-prod.yaml
 
 #Rebuild dev pod with database reset
-podman pod rm -f project-dev-pod && podman volume rm project-dev-db-data-claim && podman play kube infra/podman/project-dev.yaml
+podman pod rm -f project-dev-pod && podman volume rm project-dev-db-data-claim && podman play kube podman/project-dev.yaml
 
 #Rebuild prod pod with database reset
-podman pod rm -f project-prod-pod && podman volume rm project-prod-db-data-claim && podman play kube infra/podman/project-prod.yaml
+podman pod rm -f project-prod-pod && podman volume rm project-prod-db-data-claim && podman play kube podman/project-prod.yaml
 
 #Get pod status
 podman pod ps
@@ -49,8 +49,8 @@ podman ps --filter pod=project-prod-pod
 #Access postgres shell container (dev)
 podman exec -it project-dev-pod-postgres-db bash
 
-#Access Flask API container shell (dev)
-podman exec -it project-dev-pod-flask-api bash
+#Access Rails API container shell (dev)
+podman exec -it project-dev-pod-rails-api bash
 
 #Access React Frontend container shell (dev)
 podman exec -it project-dev-pod-react-frontend sh
@@ -62,15 +62,13 @@ podman pod logs project-dev-pod
 podman pod logs project-prod-pod
 
 #View all dev container logs
-podman logs project-dev-pod-postgres-db && podman logs project-dev-pod-flask-api && podman logs project-dev-pod-react-frontend && podman logs project-dev-pod-cloudflared
+podman logs project-dev-pod-postgres-db && podman logs project-dev-pod-rails-api && podman logs project-dev-pod-react-frontend && podman logs project-dev-pod-cloudflared
 
 #View all prod container logs
-podman logs project-prod-pod-postgres-db && podman logs project-prod-pod-flask-api && podman logs project-prod-pod-react-frontend && podman logs project-prod-pod-cloudflared
-
+podman logs project-prod-pod-postgres-db && podman logs project-prod-pod-rails-api && podman logs project-prod-pod-react-frontend && podman logs project-prod-pod-cloudflared
 
 #Check if required images are pulled
-podman images | grep -E "(node|postgres|python|cloudflared)"
+podman images | grep -E "(node|postgres|ruby|cloudflared)"
 
 #Fix TLS certificate issues - configure registry to skip TLS verification (USE WITH CAUTION)
 mkdir -p ~/.config/containers && { test -f ~/.config/containers/registries.conf && cp ~/.config/containers/registries.conf ~/.config/containers/registries.conf.bak.$(date +%s); } && printf '%s\n' '[[registry]]' 'location = "docker.io"' 'insecure = true' > ~/.config/containers/registries.conf && echo "Registry configured (docker.io marked insecure). Restart Podman. Backup saved if an existing config was present."
-

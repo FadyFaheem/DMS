@@ -1,0 +1,25 @@
+# PostgreSQL database configuration.
+#
+# Connection params come from environment variables (set by the podman pod),
+# with dev-friendly defaults so `rails s` works locally against the dev pod's
+# Postgres. See podman/project-*.yaml for the values used in containers.
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", 5432) %>
+  username: <%= ENV.fetch("DB_USER", "postgres") %>
+  password: <%= ENV.fetch("DB_PASSWORD", "postgres") %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME", "project-dev-db") %>
+
+test:
+  <<: *default
+  database: <%= ENV.fetch("TEST_DB_NAME", "project_test") %>
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME", "project-prod-db") %>

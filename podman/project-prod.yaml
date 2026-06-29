@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: project-prod-pod
+spec:
+  # Use host network mode to ensure containers bind to 0.0.0.0 and are accessible externally.
+  # This fixes issues where Podman containers only bind to 127.0.0.1.
+  hostNetwork: true
+  # DNS configuration - required when using hostNetwork to ensure DNS resolution works
+  dnsPolicy: "None"
+  dnsConfig:
+    nameservers:
+      - "8.8.8.8"      # Google DNS
+      - "8.8.4.4"      # Google DNS backup
+      - "1.1.1.1"      # Cloudflare DNS
+    searches:
+      - "."
+    options:
+      - name: ndots
+        value: "2"
+      - name: edns0
+  restartPolicy: OnFailure
+  containers:
+    # PostgreSQL Database
+    - name: postgres-db
+      image: docker.io/postgres:latest
+      env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: db-password
+        - name: POSTGRES_DB
+          value: project-prod-db
+      # Note: ports section removed - with hostNetwork: true, containers use host network directly.
+      # PostgreSQL will be accessible on port 5432 on the host.
+      volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql
+
+    # Rails API (Ruby-based)
+    - name: rails-api
+      image: docker.io/ruby:3.3
+      command: ["/bin/sh"]
+      # Install libpq, bundle gems, then boot Rails. Add `rails db:prepare &&`
+      # before the server once you introduce migrations.
+      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server -b 0.0.0.0 -p 5000"]
+      env:
+        - name: DB_HOST
+          value: localhost
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: project-prod-db
+        - name: DB_USER
+          value: postgres
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: db-password
+        - name: RAILS_ENV
+          value: production
+        - name: PORT
+          value: "5000"
+        - name: SECRET_KEY_BASE
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: secret-key-base
+      # Note: ports section removed - with hostNetwork: true, containers use host network directly.
+      # Rails API will be accessible on port 5000 on the host.
+      volumeMounts:
+        # Read-write: Rails writes to tmp/ and log/.
+        - name: api-code
+          mountPath: /app
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # React Frontend -- build then serve static files.
+    # `npm run build` outputs to /app/dist; `serve` is a small static server.
+    - name: react-frontend
+      image: docker.io/node:20-alpine
+      command: ["/bin/sh"]
+      args: ["-c", "cd /app && npm install && npm run build && npx -y serve -s dist -l 80"]
+      env:
+        # VITE_API_URL is not set -- the frontend uses window.location.origin so /api/* hits
+        # whatever host served the page (cloudflared routes /api/* to the Rails API).
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "80"
+      # Note: ports section removed - with hostNetwork: true, containers use host network directly.
+      volumeMounts:
+        - name: frontend-code
+          mountPath: /app
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # Cloudflare Tunnel — exposes prod environment via cloudflared.
+    # Setup: see cloudflared/config.prod.yml for one-time instructions.
+    - name: cloudflared
+      image: cloudflare/cloudflared:latest
+      command: ["cloudflared"]
+      args: ["tunnel", "--config", "/etc/cloudflared/config.prod.yml", "run"]
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: cloudflared-config
+          mountPath: /etc/cloudflared
+
+  volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+        claimName: project-prod-db-data-claim
+    - name: api-code
+      hostPath:
+        # TODO: Update this path to match your project location on the prod host.
+        path: /home/ubuntu/PROJECT_NAME/api
+        type: Directory
+    - name: frontend-code
+      hostPath:
+        path: /home/ubuntu/PROJECT_NAME/frontend
+        type: Directory
+    - name: host-resolv
+      hostPath:
+        path: /etc/resolv.conf
+        type: File
+    - name: cloudflared-config
+      hostPath:
+        path: /home/ubuntu/PROJECT_NAME/cloudflared
+        type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: project-prod-db-data-claim
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

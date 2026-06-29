@@ -1,9 +1,8 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// Add tunnel hostnames here when running behind a Cloudflare Tunnel,
-// e.g. ['dev-project.example.com', 'project.example.com']
-const ALLOWED_HOSTS: string[] = []
+// Hostnames allowed when running behind a Cloudflare Tunnel (Vite blocks unknown hosts).
+const ALLOWED_HOSTS: string[] = ['dms-dev.faheemlabs.com'];
 
 export default defineConfig({
   plugins: [react()],
@@ -22,4 +21,4 @@ export default defineConfig({
       interval: 1000,
     },
   },
-})
+});

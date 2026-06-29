@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: project-dev-pod
+spec:
+  # DNS configuration - ensures DNS resolution works properly
+  dnsPolicy: "None"
+  dnsConfig:
+    nameservers:
+      - "8.8.8.8"      # Google DNS
+      - "8.8.4.4"      # Google DNS backup
+      - "1.1.1.1"      # Cloudflare DNS
+    searches:
+      - "."
+    options:
+      - name: ndots
+        value: "2"
+      - name: edns0
+  # Restart policy: OnFailure = restart container if it crashes (non-zero exit)
+  # Options: Never, OnFailure, Always
+  restartPolicy: OnFailure
+  containers:
+    # PostgreSQL Database
+    - name: postgres-db
+      image: docker.io/postgres:latest
+      env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: db-password
+        - name: POSTGRES_DB
+          value: project-dev-db
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql
+
+    # Rails API (Ruby-based)
+    - name: rails-api
+      image: docker.io/ruby:3.3
+      command: ["/bin/sh"]
+      # Install libpq, bundle gems, then boot Rails. Gems install on each start
+      # (mirrors the previous pip-on-start pattern); add `rails db:prepare &&`
+      # before the server once you introduce migrations.
+      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server -b 0.0.0.0 -p 5000"]
+      env:
+        - name: DB_HOST
+          value: localhost
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: project-dev-db
+        - name: DB_USER
+          value: postgres
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: db-password
+        - name: RAILS_ENV
+          value: development
+        - name: PORT
+          value: "5000"
+        - name: SECRET_KEY_BASE
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: secret-key-base
+      ports:
+        - containerPort: 5000
+          hostPort: 5000
+      volumeMounts:
+        # Read-write: Rails writes to tmp/ and log/.
+        - name: api-code
+          mountPath: /app
+        # Mount host resolv.conf for DNS resolution
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # React Frontend (Node.js with Vite)
+    - name: react-frontend
+      image: docker.io/node:20-alpine
+      command: ["/bin/sh"]
+      args: ["-c", "cd /app && npm install && npm run dev -- --host 0.0.0.0 --port 3000"]
+      env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "3000"
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+      volumeMounts:
+        - name: frontend-code
+          mountPath: /app
+        # Mount host resolv.conf for DNS resolution
+        - name: host-resolv
+          mountPath: /etc/resolv.conf
+          readOnly: true
+
+    # Cloudflare Tunnel — exposes dev environment via cloudflared.
+    # No inbound ports needed; cloudflared establishes outbound connections to Cloudflare's edge.
+    # Setup: see cloudflared/config.yml for one-time instructions.
+    - name: cloudflared
+      image: cloudflare/cloudflared:latest
+      command: ["cloudflared"]
+      args: ["tunnel", "--config", "/etc/cloudflared/config.yml", "run"]
+      securityContext:
+        runAsUser: 0
+      volumeMounts:
+        - name: cloudflared-config
+          mountPath: /etc/cloudflared
+
+  volumes:
+    - name: pgdata
+      persistentVolumeClaim:
+        claimName: project-dev-db-data-claim
+    - name: api-code
+      hostPath:
+        # TODO: Update this path to match your project location
+        # Windows WSL: /mnt/c/PATH/TO/PROJECT/api
+        # Linux: /path/to/project/api
+        # macOS: /Users/username/path/to/project/api
+        path: /mnt/c/PROJECT_NAME/api
+        type: Directory
+    - name: frontend-code
+      hostPath:
+        # TODO: Update this path to match your project location
+        path: /mnt/c/PROJECT_NAME/frontend
+        type: Directory
+    # Mount host resolv.conf for DNS resolution
+    - name: host-resolv
+      hostPath:
+        path: /etc/resolv.conf
+        type: File
+    # Cloudflare Tunnel configuration and credentials
+    - name: cloudflared-config
+      hostPath:
+        # TODO: Update this path to match your project location
+        path: /mnt/c/PROJECT_NAME/cloudflared
+        type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: project-dev-db-data-claim
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,20 +1,8 @@
-#Run all API tests
-cd infra/api && python -m pytest tests/ -v
-
-#Run API tests with coverage
-cd infra/api && python -m pytest tests/ -v --cov=. --cov-report=term-missing
+#Run all API tests (Minitest)
+cd api && bundle exec rails test
 
 #Run a specific API test file
-read -p "Enter test file (e.g., test_auth.py): " tf && cd infra/api && python -m pytest tests/$tf -v
-
-#Run API health tests only
-cd infra/api && python -m pytest tests/test_health.py -v
-
-#Run API auth tests only
-cd infra/api && python -m pytest tests/test_auth.py -v
-
-#Run API middleware tests only
-cd infra/api && python -m pytest tests/test_middleware.py -v
+read -p "Enter test file (e.g., test/controllers/health_controller_test.rb): " tf && cd api && bundle exec rails test "$tf"
 
 #Run all frontend tests
 cd frontend && npx vitest run
@@ -26,16 +14,13 @@ cd frontend && npx vitest
 cd frontend && npx vitest run --coverage
 
 #Run a specific frontend test file
-read -p "Enter test file (e.g., client.test.ts): " tf && cd frontend && npx vitest run $tf
-
-#Run frontend API client tests only
-cd frontend && npx vitest run src/__tests__/api/client.test.ts
+read -p "Enter test file (e.g., client.test.ts): " tf && cd frontend && npx vitest run "$tf"
 
 #Run ALL tests (API + Frontend)
-cd infra/api && python -m pytest tests/ -v && cd ../../frontend && npx vitest run
+cd api && bundle exec rails test && cd ../frontend && npx vitest run
 
-#Install API test dependencies
-cd infra/api && pip install -r requirements.txt
+#Install API dependencies (bundle)
+cd api && bundle install
 
 #Install frontend dependencies
 cd frontend && npm install

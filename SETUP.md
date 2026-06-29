@@ -16,12 +16,12 @@ Or just copy the folder.
 
 Replace `project` with your project name in:
 
-- `infra/podman/project-dev.yaml` → `myproject-dev-pod`, `myproject-dev-db`, etc.
-- `infra/podman/project-prod.yaml` → `myproject-prod-pod`, `myproject-prod-db`, etc.
+- `podman/project-dev.yaml` → `myproject-dev-pod`, `myproject-dev-db`, etc.
+- `podman/project-prod.yaml` → `myproject-prod-pod`, `myproject-prod-db`, etc.
+- `podman/secrets.*.example.yaml` → the secret `metadata.name` (`myproject-dev-secrets`)
 - `tools/cli/commands/*.fzf` → references to `project-dev-pod`, `project-dev-db`
-- `infra/api/app.py` → the `service` field in `/health`
+- `api/app/controllers/health_controller.rb` → the `service` field in `/health`
 - `frontend/src/components/AppLayout.tsx` → `APP_NAME` constant
-- `frontend/src/pages/LoginPage.tsx` → "Web Template" subtitle
 - `frontend/index.html` → `<title>`
 
 ## Step 3: Update Podman host paths
@@ -29,56 +29,64 @@ Replace `project` with your project name in:
 Both pod YAMLs use `PROJECT_NAME` placeholders in `hostPath` volumes. Replace
 with the absolute path to your project:
 
-**`infra/podman/project-dev.yaml`** -- 4 occurrences:
+**`podman/project-dev.yaml`** — 3 occurrences (api, frontend, cloudflared):
 
 ```yaml
 # Windows WSL
-path: /mnt/c/Users/you/path/to/MyProject/infra/database
+path: /mnt/c/Users/you/path/to/MyProject/api
 # Linux
-path: /home/you/MyProject/infra/database
+path: /home/you/MyProject/api
 # macOS
-path: /Users/you/MyProject/infra/database
+path: /Users/you/MyProject/api
 ```
 
-**`infra/podman/project-prod.yaml`** -- 4 occurrences (production host paths).
+**`podman/project-prod.yaml`** — 3 occurrences (production host paths).
 
-## Step 4: Generate strong secrets (required for prod)
+## Step 4: Create and load secrets
+
+Secrets are podman secrets, kept out of git. For each environment:
 
 ```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+cp podman/secrets.dev.example.yaml podman/secrets.dev.yaml
+# edit secrets.dev.yaml: set db-password and secret-key-base
+# generate a strong key:
+openssl rand -hex 64
+# load it into podman (run BEFORE starting the pod):
+podman play kube podman/secrets.dev.yaml
 ```
 
-In `infra/podman/project-prod.yaml`, replace these placeholders:
-
-- `CHANGE-ME-postgres-password` (in TWO places: `POSTGRES_PASSWORD` and `DB_PASSWORD`)
-- `CHANGE-ME-flask-secret` (`SECRET_KEY`)
-- `CHANGE-ME-jwt-secret` (`JWT_SECRET_KEY`)
-
-Dev pod values can stay as defaults for local-only development.
+Repeat with `secrets.prod.example.yaml` for production (use strong values).
+`cmds secrets` wraps all of this (init / generate / load / list / rotate).
 
 ## Step 5: Set up Cloudflare Tunnel (optional)
 
-Skip this if you don't need a public URL.
+Skip this if you don't need a public URL. This template is pre-wired to
+`dms-dev.faheemlabs.com` (tunnel `dms-dev`) and `dms.faheemlabs.com`
+(tunnel `dms-prod`); change the names/hostnames for your own project.
 
 ```bash
 # Authenticate (opens a browser)
 cloudflared tunnel login
 
 # Create tunnels
-cloudflared tunnel create project-dev
-cloudflared tunnel create project-prod
+cloudflared tunnel create myproject-dev
+cloudflared tunnel create myproject-prod
 
-# Place credentials in infra/cloudflared/creds/ (already gitignored)
+# Copy each tunnel's <UUID>.json from ~/.cloudflared into cloudflared/creds/ (gitignored)
 ```
 
-Then update the `<TUNNEL_UUID>` placeholders in
-`infra/cloudflared/config.yml` and `infra/cloudflared/config.prod.yml`,
-and point your DNS:
+Then set the real `tunnel:` UUID and `credentials-file` plus your hostnames in
+`cloudflared/config.yml` (dev) and `cloudflared/config.prod.yml` (prod), and
+point DNS:
 
 ```bash
-cloudflared tunnel route dns project-dev dev-myproject.example.com
-cloudflared tunnel route dns project-prod myproject.example.com
+cloudflared tunnel route dns myproject-dev dev-myproject.example.com
+cloudflared tunnel route dns myproject-prod myproject.example.com
 ```
+
+Add any dev tunnel hostname to `ALLOWED_HOSTS` in `frontend/vite.config.ts` and
+to `config.hosts` in `api/config/environments/development.rb`, so Vite and Rails
+accept requests forwarded by the tunnel.
 
 ## Step 6: Set up the developer CLI
 
@@ -88,43 +96,36 @@ Add to your `~/.bashrc`:
 alias cmds='bash tools/cli/cmds.sh'
 ```
 
-Reload: `source ~/.bashrc`
-
-Make sure `fzf` is installed:
-
-```bash
-# macOS
-brew install fzf
-# Ubuntu/Debian
-sudo apt install fzf
-# Windows (Git Bash) -- see https://github.com/junegunn/fzf
-```
+Reload: `source ~/.bashrc`. Make sure `fzf` is installed (see your package manager).
 
 ## Step 7: Start the dev environment
 
 ```bash
 # Pre-pull images (one-time, fixes intermittent TLS issues)
-cmds pods    # pick "Pre-pull required images"
+cmds pods      # pick "Pre-pull required images"
+
+# Load dev secrets (one-time, before first start)
+cmds secrets   # pick "Load dev secrets into podman"
 
 # Start the pod
-cmds pods    # pick "Start project-dev pod"
+cmds pods      # pick "Start project-dev pod"
 ```
 
 Or directly:
 
 ```bash
-podman play kube infra/podman/project-dev.yaml
+podman play kube podman/secrets.dev.yaml
+podman play kube podman/project-dev.yaml
 ```
 
-Open <http://localhost:3000> in your browser. Log in with the seeded
-super-admin: **admin** / **admin**, then immediately change the password
-(top-right user menu → Change Password).
+Open <http://localhost:3000> in your browser. The app loads straight to the
+dashboard (there is no login).
 
 ## Step 8: Customize
 
-- **Database schema:** add migrations to `infra/database/` -- see [infra/database/README.md](infra/database/README.md)
-- **API endpoints:** add a new blueprint in `infra/api/`, register it in `app.py` -- see [CLAUDE.md](CLAUDE.md)
-- **Frontend routes:** add pages in `frontend/src/pages/`, register in `frontend/src/App.tsx` -- see [CLAUDE.md](CLAUDE.md)
+- **Database schema:** generate migrations in `api/` (`rails generate migration ...`) — see [CLAUDE.md](CLAUDE.md)
+- **API endpoints:** add controllers + routes in `api/` — see [CLAUDE.md](CLAUDE.md)
+- **Frontend routes:** add pages in `frontend/src/pages/`, register in `frontend/src/App.tsx`
 - **Navigation:** edit the `SECTIONS` constant in `frontend/src/components/AppLayout.tsx`
 - **Theme:** edit `frontend/src/theme/theme.ts` (brand colors at the top)
 
@@ -132,6 +133,7 @@ super-admin: **admin** / **admin**, then immediately change the password
 
 ### Pod won't start
 - Check Podman is installed: `podman --version`
+- Ensure secrets are loaded: `podman secret ls` (the pod references them via `secretKeyRef`)
 - Verify all host paths in `project-dev.yaml` exist
 - Check logs: `podman logs project-dev-pod-postgres-db`
 - TLS issues pulling images: `cmds pods` → "Fix TLS certificate issues"
@@ -149,13 +151,7 @@ super-admin: **admin** / **admin**, then immediately change the password
 ### Frontend errors about missing `node_modules`
 - The `react-frontend` container runs `npm install` on every start
 - Check its logs: `podman logs project-dev-pod-react-frontend`
-- If install hangs, exec in and run manually: `podman exec -it project-dev-pod-react-frontend sh`
 
-### "Invalid credentials" on login
-- The seeded password is literally `admin`. If you've already changed it, use the new one
-- To reset, wipe the DB volume and restart: `cmds pods` → "Rebuild dev pod with database reset"
-
-### Migrations not applying
-- The Flask API container runs `run_migrations()` on every startup
-- Check API logs: `podman logs project-dev-pod-flask-api`
-- Files starting with `000` are intentionally skipped (those run as DB init)
+### Rails API container keeps restarting
+- It runs `bundle install` on each start; check logs: `podman logs project-dev-pod-rails-api`
+- Ensure the `project-dev-secrets` podman secret is loaded (it provides `SECRET_KEY_BASE`)

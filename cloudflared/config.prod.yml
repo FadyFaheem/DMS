@@ -1,0 +1,31 @@
+# Cloudflare Tunnel configuration for the prod environment.
+# Exposes the production environment at dms.faheemlabs.com
+#
+# Tunnel: dms-prod
+# The credentials file is mounted into the cloudflared container at
+# /etc/cloudflared/creds (the pod mounts ./cloudflared -> /etc/cloudflared).
+
+tunnel: 1128f81e-cb81-4423-a086-2690aacc0ad1
+credentials-file: /etc/cloudflared/creds/1128f81e-cb81-4423-a086-2690aacc0ad1.json
+
+ingress:
+  # API requests: route /api/... to the Rails backend on port 5000
+  - hostname: dms.faheemlabs.com
+    path: "^/api/.*"
+    service: http://localhost:5000
+    originRequest:
+      noTLSVerify: true
+
+  # Health check endpoint on the API
+  - hostname: dms.faheemlabs.com
+    path: /health
+    service: http://localhost:5000
+
+  # All other traffic goes to the frontend on port 80
+  - hostname: dms.faheemlabs.com
+    service: http://localhost:80
+    originRequest:
+      noTLSVerify: true
+
+  # Catch-all rule (required by cloudflared)
+  - service: http_status:404

@@ -1,23 +1,22 @@
 # Web Template
 
-A full-stack web application template featuring a React frontend, Flask API, PostgreSQL database, and Cloudflare Tunnel — all orchestrated via Podman pods. Designed to be cloned, renamed, and customized for new projects.
+A full-stack web application template featuring a React frontend, Rails API, PostgreSQL database, and Cloudflare Tunnel — all orchestrated via Podman pods. Designed to be cloned, renamed, and customized for new projects.
+
+> **No authentication.** This template ships without auth or roles. Add your own when a project needs it.
 
 ## What's Included
 
 - **Frontend:** React 19 + Vite 8 + TypeScript + MUI 7 + React Router 7
-  - JWT-based auth with single-flight token refresh
-  - Permission-gated route guards (`ProtectedRoute`)
   - Configurable app shell with sidebar navigation (`AppLayout`)
+  - Slim `fetch` API client (`api/client.ts`)
   - Vitest + Testing Library
-- **API:** Python 3.11 + Flask 3 + psycopg2
-  - Application factory pattern with blueprint-per-domain
-  - `@require_auth` / `@require_permission` decorator stack
-  - Connection-pooled DB helpers (`query`, `execute`, `transaction`)
-  - Auto-applied SQL migrations on startup
-  - UTC-by-default datetime serialization
-- **Database:** PostgreSQL with numbered SQL migrations and tracking table
-- **Infra:** Podman pod definitions for dev and prod, Cloudflare Tunnel ingress
-- **Tooling:** Interactive `cmds` CLI (fzf-driven) for pods, database, API, tunnel, and tests
+- **API:** Ruby 3.3 + Rails 8 (API-only)
+  - `GET /health` skeleton, ready for your first resource
+  - ActiveRecord + PostgreSQL (no models yet)
+  - Puma web server
+- **Database:** PostgreSQL, schema managed by ActiveRecord migrations
+- **Infra:** Podman pod definitions for dev and prod, Cloudflare Tunnel ingress, podman-secret-based config
+- **Tooling:** Interactive `cmds` CLI (fzf-driven) for pods, database, API, secrets, tunnel, and tests
 
 ## Quick Start
 
@@ -26,8 +25,10 @@ A full-stack web application template featuring a React frontend, Flask API, Pos
 
 # 2. Update placeholder paths in podman manifests (see SETUP.md)
 
-# 3. Start the development pod
-podman play kube infra/podman/project-dev.yaml
+# 3. Create + load the dev secrets, then start the development pod
+cp podman/secrets.dev.example.yaml podman/secrets.dev.yaml   # then edit values
+podman play kube podman/secrets.dev.yaml
+podman play kube podman/project-dev.yaml
 
 # 4. Install fzf and add the cmds alias to your shell
 alias cmds='bash tools/cli/cmds.sh'
@@ -41,41 +42,31 @@ Frontend will be available on `http://localhost:3000`, API on `http://localhost:
 ## Project Structure
 
 ```
-Web-Template/
+.
+├── api/                     # Ruby on Rails API-only app
+│   ├── app/controllers/     # health_controller.rb (+ your controllers)
+│   ├── config/              # routes.rb, database.yml, environments/
+│   ├── db/                  # ActiveRecord migrations + seeds (none yet)
+│   ├── test/                # Minitest
+│   └── Gemfile
 ├── frontend/                # React + Vite + TypeScript SPA
 │   ├── src/
-│   │   ├── api/             # Typed API client modules
-│   │   ├── components/      # Shared components (AppLayout, ProtectedRoute)
-│   │   ├── context/         # React Context (AuthContext)
+│   │   ├── api/             # Typed API client (client.ts)
+│   │   ├── components/      # Shared components (AppLayout)
 │   │   ├── hooks/           # Custom hooks (useIsMobile)
 │   │   ├── pages/           # Route-level page components
 │   │   ├── theme/           # MUI theme
-│   │   ├── utils/           # Helper utilities
 │   │   ├── __tests__/       # Vitest unit tests
 │   │   └── test/            # Vitest setup
 │   ├── package.json
-│   ├── vite.config.ts
-│   ├── vitest.config.ts
-│   └── tsconfig.json
-├── infra/
-│   ├── api/                 # Flask REST API
-│   │   ├── app.py           # Application factory + entry point
-│   │   ├── db.py            # Connection pool + migrations
-│   │   ├── middleware.py    # Auth decorators
-│   │   ├── auth.py          # Auth blueprint (login/refresh/logout/me)
-│   │   ├── helpers.py       # Shared request helpers
-│   │   ├── tests/           # Pytest suite
-│   │   └── requirements.txt
-│   ├── database/            # Numbered SQL migrations
-│   ├── podman/              # Pod definitions (dev + prod)
-│   └── cloudflared/         # Tunnel configs (creds gitignored)
+│   └── vite.config.ts
+├── podman/                  # Pod definitions (dev + prod) + secret templates
+├── cloudflared/             # Tunnel configs (creds gitignored)
 ├── tools/
 │   └── cli/                 # fzf-based developer command runner
-│       ├── cmds.sh
-│       └── commands/        # *.fzf command lists
 ├── CLAUDE.md                # AI assistant / new dev guide
-├── README.md                # This file
-└── SETUP.md                 # Step-by-step setup guide
+├── README.md               # This file
+└── SETUP.md                # Step-by-step setup guide
 ```
 
 ## Services
@@ -83,38 +74,53 @@ Web-Template/
 | Service | Dev Port | Prod Port | Purpose |
 |---------|----------|-----------|---------|
 | PostgreSQL | 5432 | 5432 | Database |
-| Flask API | 5000 | 5000 | REST API |
+| Rails API | 5000 | 5000 | REST API |
 | Vite (frontend) | 3000 | 80 | Web UI |
 | Cloudflared | — | — | Public ingress tunnel |
+
+## Public URLs (Cloudflare Tunnel)
+
+| Environment | Hostname | Tunnel |
+|-------------|----------|--------|
+| Dev | `dms-dev.faheemlabs.com` | `dms-dev` |
+| Prod | `dms.faheemlabs.com` | `dms-prod` |
+
+## Secrets
+
+Secrets are managed as podman secrets and never committed:
+
+- Copy `podman/secrets.{dev,prod}.example.yaml` to `secrets.{dev,prod}.yaml` (gitignored) and fill in values.
+- Load them with `cmds secrets` (or `podman play kube podman/secrets.dev.yaml`) **before** starting a pod.
+- Tunnel credentials live in `cloudflared/creds/` (gitignored).
 
 ## Default Credentials
 
 > **Change these before any non-local use.** They are placeholders only.
 
-**Database (dev):** `postgres` / `postgres` on `project-dev-db`
-
-**Application admin (seeded):** see `infra/database/002-seed.sql`
+**Database (dev):** `postgres` / `postgres` on `project-dev-db` (password supplied via the `project-dev-secrets` podman secret).
 
 ## Developer Commands
 
 The `cmds` tool provides an interactive (fzf) menu for common operations:
 
 - `cmds pods` — start, stop, rebuild, logs, exec into pod containers
-- `cmds database` — psql shell, migration status, backup/restore
-- `cmds api` — API logs, health check, restart
+- `cmds database` — psql shell, Rails migrations, backup/restore
+- `cmds api` — API logs, health check, Rails console
+- `cmds secrets` — create, load, list, and rotate podman secrets
 - `cmds cf` — Cloudflare Tunnel setup, login, DNS routing
-- `cmds test` — run pytest (API) and vitest (frontend) suites
+- `cmds test` — run Minitest (API) and vitest (frontend) suites
 
 ## Documentation
 
 - **[SETUP.md](SETUP.md)** — step-by-step guide for setting up the template for a new project
-- **[CLAUDE.md](CLAUDE.md)** — architectural conventions, coding patterns, and common workflows (for AI assistants and new contributors)
-- **[infra/database/README.md](infra/database/README.md)** — migration conventions
-- **[infra/podman/README.md](infra/podman/README.md)** — pod orchestration details
+- **[CLAUDE.md](CLAUDE.md)** — architectural conventions, coding patterns, and common workflows
+- **[podman/README.md](podman/README.md)** — pod orchestration details
 
 ## Prerequisites
 
-- [Podman](https://podman.io/) (with `podman-compose` or `play kube` support)
+- [Podman](https://podman.io/) (with `play kube` support)
+- [Ruby 3.3+](https://www.ruby-lang.org/) and [Rails 8](https://rubyonrails.org/) (for local API work)
+- [Node 20+](https://nodejs.org/) (for the frontend)
 - [fzf](https://github.com/junegunn/fzf) (for the `cmds` interactive runner)
 - Bash shell (Git Bash on Windows, native on macOS/Linux)
 - [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) account (for the tunnel container)

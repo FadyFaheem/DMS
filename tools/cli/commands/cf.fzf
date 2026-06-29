@@ -1,14 +1,26 @@
 #Cloudflare Tunnel login (run on host)
 cloudflared tunnel login
 
-#Create cloudflare tunnel for dev
-cloudflared tunnel create project-dev
+#Create cloudflare tunnel for dev (dms-dev)
+cloudflared tunnel create dms-dev
 
-#Create cloudflare tunnel for prod
-cloudflared tunnel create project-prod
+#Create cloudflare tunnel for prod (dms-prod)
+cloudflared tunnel create dms-prod
 
 #List cloudflare tunnels
 cloudflared tunnel list
+
+#Show dev tunnel info (dms-dev)
+cloudflared tunnel info dms-dev
+
+#Show prod tunnel info (dms-prod)
+cloudflared tunnel info dms-prod
+
+#Route DNS for dev tunnel (dms-dev.faheemlabs.com)
+cloudflared tunnel route dns dms-dev dms-dev.faheemlabs.com
+
+#Route DNS for prod tunnel (dms.faheemlabs.com)
+cloudflared tunnel route dns dms-prod dms.faheemlabs.com
 
 #View cloudflared logs (dev)
 podman logs project-dev-pod-cloudflared
@@ -40,14 +52,8 @@ podman stats project-dev-pod-cloudflared --no-stream
 #Check cloudflared container resource usage (prod)
 podman stats project-prod-pod-cloudflared --no-stream
 
-#Route DNS for dev tunnel
-read -p "Enter dev hostname (e.g., dev-project.faheemlabs.com): " hostname && cloudflared tunnel route dns project-dev "$hostname"
+#Delete dev tunnel (dms-dev)
+cloudflared tunnel delete dms-dev
 
-#Route DNS for prod tunnel
-read -p "Enter prod hostname (e.g., project.faheemlabs.com): " hostname && cloudflared tunnel route dns project-prod "$hostname"
-
-#Delete dev tunnel
-cloudflared tunnel delete project-dev
-
-#Delete prod tunnel
-cloudflared tunnel delete project-prod
+#Delete prod tunnel (dms-prod)
+cloudflared tunnel delete dms-prod
