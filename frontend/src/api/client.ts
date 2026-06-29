@@ -59,7 +59,7 @@ export function openAuthenticatedUrl(url: string): void {
     const sep = finalUrl.includes('?') ? '&' : '?';
     finalUrl = `${finalUrl}${sep}token=${encodeURIComponent(token)}`;
   }
-  window.open(finalUrl, '_blank');
+  window.open(finalUrl, '_blank', 'noopener,noreferrer');
 }
 
 export async function throwIfNotOk(res: Response, fallback: string): Promise<void> {
