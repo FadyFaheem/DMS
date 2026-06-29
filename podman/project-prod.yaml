@@ -27,9 +27,11 @@ spec:
       env:
         - name: POSTGRES_USER
           value: postgres
-        # TODO: Change this and the matching DB_PASSWORD below before any non-local deploy.
         - name: POSTGRES_PASSWORD
-          value: CHANGE-ME-postgres-password
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: db-password
         - name: POSTGRES_DB
           value: project-prod-db
       # Note: ports section removed - with hostNetwork: true, containers use host network directly.
@@ -55,14 +57,19 @@ spec:
         - name: DB_USER
           value: postgres
         - name: DB_PASSWORD
-          value: CHANGE-ME-postgres-password
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: db-password
         - name: RAILS_ENV
           value: production
         - name: PORT
           value: "5000"
-        # TODO: Replace with a strong random value (e.g. `openssl rand -hex 64`).
         - name: SECRET_KEY_BASE
-          value: CHANGE-ME-secret-key-base
+          valueFrom:
+            secretKeyRef:
+              name: project-prod-secrets
+              key: secret-key-base
       # Note: ports section removed - with hostNetwork: true, containers use host network directly.
       # Rails API will be accessible on port 5000 on the host.
       volumeMounts:

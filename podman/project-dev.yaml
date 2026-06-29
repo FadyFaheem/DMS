@@ -27,7 +27,10 @@ spec:
         - name: POSTGRES_USER
           value: postgres
         - name: POSTGRES_PASSWORD
-          value: postgres
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: db-password
         - name: POSTGRES_DB
           value: project-dev-db
       ports:
@@ -55,14 +58,19 @@ spec:
         - name: DB_USER
           value: postgres
         - name: DB_PASSWORD
-          value: postgres
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: db-password
         - name: RAILS_ENV
           value: development
         - name: PORT
           value: "5000"
-        # Rails secret_key_base -- override for any non-local use.
         - name: SECRET_KEY_BASE
-          value: dev-secret-key-base-change-in-production
+          valueFrom:
+            secretKeyRef:
+              name: project-dev-secrets
+              key: secret-key-base
       ports:
         - containerPort: 5000
           hostPort: 5000

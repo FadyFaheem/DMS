@@ -63,3 +63,7 @@ cloudflared/creds/*.json
 /api/log/
 /api/config/master.key
 /api/storage/
+
+# Podman secrets (real values; templates *.example.yaml stay committed)
+podman/secrets.dev.yaml
+podman/secrets.prod.yaml
