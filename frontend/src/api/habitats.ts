@@ -7,3 +7,7 @@ export function buildHabitat(terrain: string, name?: string): Promise<Habitat> {
     body: JSON.stringify({ terrain, name }),
   });
 }
+
+export function upgradeHabitat(id: number): Promise<Habitat> {
+  return apiJson<Habitat>(`/api/habitats/${id}/upgrade`, { method: 'POST' });
+}

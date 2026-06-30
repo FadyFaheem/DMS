@@ -39,6 +39,7 @@ const player = {
     },
   ],
   summary: { population: 1, by_category: { carnivore: 1 }, avg_health: 80, critical: 0 },
+  events: [{ id: 1, kind: 'birth', message: 'Rexy hatched', created_at: '2026-01-02T00:00:00Z' }],
 };
 
 describe('ParkDashboardPage', () => {
@@ -61,5 +62,7 @@ describe('ParkDashboardPage', () => {
 
     await waitFor(() => expect(screen.getByText('Rexy')).toBeInTheDocument());
     expect(screen.getByText("Ada's Park")).toBeInTheDocument();
+    expect(screen.getByText('Recent Activity')).toBeInTheDocument();
+    expect(screen.getByText('Rexy hatched')).toBeInTheDocument();
   });
 });

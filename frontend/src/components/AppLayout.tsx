@@ -40,6 +40,8 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { label: 'Park', basePath: '/', tabs: [{ label: 'Overview', path: '/' }] },
   { label: 'Habitats', basePath: '/habitats' },
+  { label: 'Research', basePath: '/research' },
+  { label: 'Production', basePath: '/production' },
   { label: 'Profile', basePath: '/profile' },
 ];
 
@@ -76,7 +78,15 @@ export default function AppLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
       <AppBar position="static" sx={{ flexShrink: 0 }}>
         <Container maxWidth={false}>
           <Toolbar disableGutters>
@@ -154,8 +164,14 @@ export default function AppLayout() {
           <Box sx={{ py: 1 }}>
             {SECTIONS.map((section) => (
               <Box key={section.basePath}>
-                <ListItemButton onClick={() => handleNavClick(section.basePath)} sx={{ py: 1, px: 2 }}>
-                  <ListItemText primary={section.label} primaryTypographyProps={{ fontWeight: 700 }} />
+                <ListItemButton
+                  onClick={() => handleNavClick(section.basePath)}
+                  sx={{ py: 1, px: 2 }}
+                >
+                  <ListItemText
+                    primary={section.label}
+                    primaryTypographyProps={{ fontWeight: 700 }}
+                  />
                 </ListItemButton>
                 <Divider />
               </Box>
@@ -185,10 +201,20 @@ export default function AppLayout() {
                     <ListItemButton
                       selected={isActive}
                       onClick={() => navigate(tab.path)}
-                      sx={{ py: 1, px: sidebarOpen ? 2 : 0, justifyContent: sidebarOpen ? 'flex-start' : 'center' }}
+                      sx={{
+                        py: 1,
+                        px: sidebarOpen ? 2 : 0,
+                        justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                      }}
                     >
                       {sidebarOpen ? (
-                        <ListItemText primary={tab.label} primaryTypographyProps={{ variant: 'body2', fontWeight: isActive ? 700 : 400 }} />
+                        <ListItemText
+                          primary={tab.label}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            fontWeight: isActive ? 700 : 400,
+                          }}
+                        />
                       ) : (
                         <Typography variant="body2">{tab.label.charAt(0)}</Typography>
                       )}
@@ -199,13 +225,20 @@ export default function AppLayout() {
             </List>
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
               <IconButton size="small" onClick={() => setSidebarOpen((v) => !v)}>
-                {sidebarOpen ? <ChevronLeftIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+                {sidebarOpen ? (
+                  <ChevronLeftIcon fontSize="small" />
+                ) : (
+                  <ChevronRightIcon fontSize="small" />
+                )}
               </IconButton>
             </Box>
           </Box>
         )}
 
-        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}>
+        <Box
+          component="main"
+          sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}
+        >
           <Outlet />
         </Box>
       </Box>

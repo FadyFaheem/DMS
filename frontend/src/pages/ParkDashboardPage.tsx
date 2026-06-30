@@ -10,8 +10,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Select,
   Stack,
@@ -19,10 +23,11 @@ import {
   Typography,
 } from '@mui/material';
 import { useGame } from '../context/PlayerContext';
-import type { Dinosaur } from '../api/players';
+import type { Dinosaur, ParkEvent } from '../api/players';
 import { feedDino } from '../api/dinosaurs';
 import { buyFood } from '../api/food';
 import { statusColor } from '../utils/status';
+import { formatDateTime } from '../utils/dateFormat';
 import DinoInspector from '../components/DinoInspector';
 import BreedingModal from '../components/BreedingModal';
 
@@ -37,7 +42,14 @@ export default function ParkDashboardPage() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        useFlexGap
+        sx={{ mb: 2 }}
+      >
         <Typography variant="h4">{player.display_name}&apos;s Park</Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={() => setFoodOpen(true)}>
@@ -53,13 +65,18 @@ export default function ParkDashboardPage() {
         <SummaryCard label="Population" value={summary.population} />
         <SummaryCard label="Avg Health" value={summary.avg_health} />
         <SummaryCard label="Critical" value={summary.critical} />
-        <SummaryCard label="Food P/M/F" value={`${player.food.plants}/${player.food.meat}/${player.food.fish}`} />
+        <SummaryCard
+          label="Food P/M/F"
+          value={`${player.food.plants}/${player.food.meat}/${player.food.fish}`}
+        />
       </Grid>
 
       <Typography variant="h6" gutterBottom>
         Dinosaurs
       </Typography>
-      {player.dinosaurs.length === 0 && <Typography color="text.secondary">No dinosaurs yet.</Typography>}
+      {player.dinosaurs.length === 0 && (
+        <Typography color="text.secondary">No dinosaurs yet.</Typography>
+      )}
       <Grid container spacing={2}>
         {player.dinosaurs.map((dino) => (
           <Grid key={dino.id} size={{ xs: 12, sm: 6, md: 4 }}>
@@ -75,6 +92,8 @@ export default function ParkDashboardPage() {
         ))}
       </Grid>
 
+      <RecentActivity events={player.events ?? []} />
+
       <DinoInspector
         dino={inspected}
         habitats={player.habitats}
@@ -84,7 +103,12 @@ export default function ParkDashboardPage() {
           setInspected(null);
         }}
       />
-      <BreedingModal open={breedOpen} dinos={player.dinosaurs} onClose={() => setBreedOpen(false)} onChanged={refresh} />
+      <BreedingModal
+        open={breedOpen}
+        dinos={player.dinosaurs}
+        onClose={() => setBreedOpen(false)}
+        onChanged={refresh}
+      />
       <BuyFoodDialog open={foodOpen} onClose={() => setFoodOpen(false)} onBought={refresh} />
     </Box>
   );
@@ -102,6 +126,52 @@ function SummaryCard({ label, value }: { label: string; value: number | string }
         </CardContent>
       </Card>
     </Grid>
+  );
+}
+
+function eventColor(kind: string): 'success' | 'error' | 'info' | 'primary' | 'default' {
+  switch (kind) {
+    case 'birth':
+      return 'success';
+    case 'death':
+      return 'error';
+    case 'research':
+      return 'info';
+    case 'build':
+    case 'upgrade':
+      return 'primary';
+    default:
+      return 'default';
+  }
+}
+
+function RecentActivity({ events }: { events: ParkEvent[] }) {
+  if (events.length === 0) return null;
+  return (
+    <Box sx={{ mt: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Recent Activity
+      </Typography>
+      <Card>
+        <List dense disablePadding>
+          {events.map((event, index) => (
+            <Box key={event.id}>
+              {index > 0 && <Divider component="li" />}
+              <ListItem
+                secondaryAction={
+                  <Chip size="small" label={event.kind} color={eventColor(event.kind)} />
+                }
+              >
+                <ListItemText
+                  primary={event.message}
+                  secondary={formatDateTime(event.created_at)}
+                />
+              </ListItem>
+            </Box>
+          ))}
+        </List>
+      </Card>
+    </Box>
   );
 }
 

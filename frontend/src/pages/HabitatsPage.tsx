@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useGame } from '../context/PlayerContext';
-import { buildHabitat } from '../api/habitats';
+import { buildHabitat, upgradeHabitat } from '../api/habitats';
 
 const TERRAINS = ['forest', 'grassland', 'wetland', 'volcanic', 'aquatic'];
 
@@ -25,8 +25,11 @@ export default function HabitatsPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [upBusy, setUpBusy] = useState<number | null>(null);
 
   if (!player) return null;
+
+  const canUpgrade = player.research.unlocked.includes('habitat_expansion');
 
   const build = async () => {
     setBusy(true);
@@ -39,6 +42,19 @@ export default function HabitatsPage() {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const upgrade = async (id: number) => {
+    setUpBusy(id);
+    setError(null);
+    try {
+      await upgradeHabitat(id);
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setUpBusy(null);
     }
   };
 
@@ -61,7 +77,12 @@ export default function HabitatsPage() {
                 </MenuItem>
               ))}
             </Select>
-            <TextField size="small" label="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
+            <TextField
+              size="small"
+              label="Name (optional)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
             <Button variant="contained" disabled={busy} onClick={build}>
               Build
             </Button>
@@ -83,7 +104,10 @@ export default function HabitatsPage() {
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h6">{habitat.name}</Typography>
-                    <Chip size="small" label={habitat.terrain} />
+                    <Stack direction="row" spacing={0.5}>
+                      <Chip size="small" color="primary" label={`Lvl ${habitat.level}`} />
+                      <Chip size="small" label={habitat.terrain} />
+                    </Stack>
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
                     {habitat.living_count} / {habitat.capacity} dinosaurs
@@ -99,6 +123,15 @@ export default function HabitatsPage() {
                       <Chip key={d.id} size="small" label={d.name} sx={{ mr: 0.5, mb: 0.5 }} />
                     ))}
                   </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    disabled={!canUpgrade || upBusy === habitat.id}
+                    onClick={() => upgrade(habitat.id)}
+                  >
+                    {canUpgrade ? 'Upgrade' : 'Needs Habitat Expansion'}
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>

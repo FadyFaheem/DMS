@@ -5,6 +5,7 @@ export interface Habitat {
   name: string;
   terrain: string;
   capacity: number;
+  level: number;
   happiness_modifier: number;
   living_count: number;
 }
@@ -42,6 +43,54 @@ export interface ParkSummary {
   critical: number;
 }
 
+export interface ResearchTech {
+  key: string;
+  name: string;
+  description: string;
+  cost: number;
+  prerequisites: string[];
+  requires_population: number;
+  unlocks: string[];
+  unlocked: boolean;
+}
+
+export interface ResearchState {
+  unlocked: string[];
+  catalog: ResearchTech[];
+}
+
+export interface FoodBuilding {
+  id: number;
+  kind: string;
+  name: string | null;
+  level: number;
+  food_column: string | null;
+  output_per_day: number;
+  last_collected_at: string | null;
+}
+
+export interface FoodBuildingCatalogEntry {
+  kind: string;
+  name: string;
+  food_column: string;
+  base_output_per_day: number;
+  build_cost: number;
+  required_tech: string;
+  unlocked: boolean;
+}
+
+export interface FoodProductionState {
+  buildings: FoodBuilding[];
+  catalog: FoodBuildingCatalogEntry[];
+}
+
+export interface ParkEvent {
+  id: number;
+  kind: string;
+  message: string;
+  created_at: string;
+}
+
 export interface Player {
   id: number;
   player_code: string;
@@ -51,6 +100,9 @@ export interface Player {
   habitats: Habitat[];
   dinosaurs: Dinosaur[];
   summary: ParkSummary;
+  research: ResearchState;
+  food_productions: FoodProductionState;
+  events: ParkEvent[];
 }
 
 export function createPlayer(): Promise<Player> {

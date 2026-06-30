@@ -4,6 +4,8 @@ import { PlayerProvider, useGame } from './context/PlayerContext';
 import AppLayout from './components/AppLayout';
 import ParkDashboardPage from './pages/ParkDashboardPage';
 import HabitatsPage from './pages/HabitatsPage';
+import ResearchPage from './pages/ResearchPage';
+import ProductionPage from './pages/ProductionPage';
 import ProfilePage from './pages/ProfilePage';
 import { appTheme } from './theme/theme';
 
@@ -20,7 +22,9 @@ function GameRoutes() {
 
   if (!player) {
     return (
-      <Box sx={{ display: 'grid', placeItems: 'center', height: '100dvh', p: 3, textAlign: 'center' }}>
+      <Box
+        sx={{ display: 'grid', placeItems: 'center', height: '100dvh', p: 3, textAlign: 'center' }}
+      >
         <Typography color="error">{error ?? 'Unable to load your park.'}</Typography>
       </Box>
     );
@@ -31,6 +35,8 @@ function GameRoutes() {
       <Route element={<AppLayout />}>
         <Route index element={<ParkDashboardPage />} />
         <Route path="habitats" element={<HabitatsPage />} />
+        <Route path="research" element={<ResearchPage />} />
+        <Route path="production" element={<ProductionPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
