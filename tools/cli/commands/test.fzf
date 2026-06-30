@@ -1,8 +1,8 @@
-#Run all API tests (Minitest)
-cd api && bundle exec rails test
+#Run all API specs (RSpec)
+cd api && bundle exec rspec
 
-#Run a specific API test file
-read -p "Enter test file (e.g., test/controllers/health_controller_test.rb): " tf && cd api && bundle exec rails test "$tf"
+#Run a specific API spec file
+read -p "Enter spec file (e.g., spec/models/dino_report_spec.rb): " tf && cd api && bundle exec rspec "$tf"
 
 #Run all frontend tests
 cd frontend && npx vitest run
@@ -17,7 +17,7 @@ cd frontend && npx vitest run --coverage
 read -p "Enter test file (e.g., client.test.ts): " tf && cd frontend && npx vitest run "$tf"
 
 #Run ALL tests (API + Frontend)
-cd api && bundle exec rails test && cd ../frontend && npx vitest run
+cd api && bundle exec rspec && cd ../frontend && npx vitest run
 
 #Install API dependencies (bundle)
 cd api && bundle install
