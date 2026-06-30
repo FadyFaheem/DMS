@@ -258,7 +258,7 @@ Secret values are stored as **podman secrets**, never committed:
 
 - Configs in [cloudflared/config.yml](cloudflared/config.yml) (dev) and [cloudflared/config.prod.yml](cloudflared/config.prod.yml) (prod).
 - Dev: `dms-dev` -> `dms-dev.faheemlabs.com`; Prod: `dms-prod` -> `dms.faheemlabs.com`.
-- Ingress routes `/api` and `/health` to the Rails API (`:5000` dev, `:5020` prod) and everything else to the frontend (`:3000` dev, `:3020` prod).
+- Ingress routes `/api` and `/health` to the Rails API (`:5000` dev, `:18080` prod) and everything else to the frontend (`:3000` dev, `:3020` prod).
 - Credentials live in `cloudflared/creds/<UUID>.json` (gitignored).
 - Dev tunnel hostname must be allow-listed in `frontend/vite.config.ts` (`ALLOWED_HOSTS`) and `api/config/environments/development.rb` (`config.hosts`).
 - `cmds cf` wraps tunnel login/create/route/info.
