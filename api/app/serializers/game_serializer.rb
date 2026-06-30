@@ -17,8 +17,30 @@ module GameSerializer
       habitats: player.habitats.order(:id).map { |h| habitat(h, living_by_habitat[h.id] || 0) },
       dinosaurs: dinos.map { |d| dinosaur(d) },
       summary: summary(living),
+      research: research(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
+    }
+  end
+
+  # Research tree: every tech in the catalog with an `unlocked` flag, plus the
+  # flat list of unlocked keys for quick client-side gating.
+  def research(player)
+    unlocked = player.researches.pluck(:tech_key)
+    {
+      unlocked: unlocked,
+      catalog: ResearchCatalog.all.map do |tech|
+        {
+          key: tech.key,
+          name: tech.name,
+          description: tech.description,
+          cost: tech.cost,
+          prerequisites: tech.prerequisites,
+          requires_population: tech.requires_population,
+          unlocks: tech.unlocks,
+          unlocked: unlocked.include?(tech.key)
+        }
+      end
     }
   end
 
