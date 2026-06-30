@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend (lint, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint (ESLint)
+        run: npm run lint
+      - name: Test (Vitest)
+        run: npm run test
+      - name: Build (tsc + Vite)
+        run: npm run build
+
+  backend:
+    name: Backend (RuboCop, Brakeman, RSpec)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      RAILS_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      TEST_DB_NAME: project_test
+      # Rails reads SECRET_KEY_BASE from the env (see CLAUDE.md); any value works in CI.
+      SECRET_KEY_BASE: ci-secret-key-base-not-used-in-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3.11"
+          bundler-cache: true
+          working-directory: api
+      - name: Lint (RuboCop)
+        run: bundle exec rubocop --config .rubocop.yml
+      - name: Security audit (bundler-audit)
+        run: bundle exec bundle-audit check --update --config config/bundler-audit.yml
+      - name: Security scan (Brakeman)
+        run: bundle exec brakeman --quiet --no-pager --exit-on-warn --exit-on-error
+      - name: Prepare test database
+        run: bundle exec rails db:test:prepare
+      - name: Test (RSpec)
+        run: bundle exec rspec
+      - name: Seeds load cleanly
+        run: bundle exec rails db:seed:replant
+
+  refactor-specs:
+    name: Refactor specs (RSpec)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: refactor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3.11"
+      - name: Install RSpec
+        run: gem install rspec
+      - name: Test (RSpec)
+        run: rspec dino_management_spec.rb
