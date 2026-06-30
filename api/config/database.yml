@@ -2,7 +2,7 @@
 #
 # Connection params come from environment variables (set by the podman pod),
 # with dev-friendly defaults so `rails s` works locally against the dev pod's
-# Postgres. See podman/project-*.yaml for the values used in containers.
+# Postgres. See podman/dpm-*.yaml for the values used in containers.
 default: &default
   adapter: postgresql
   encoding: unicode
@@ -14,7 +14,7 @@ default: &default
 
 development:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME", "project-dev-db") %>
+  database: <%= ENV.fetch("DB_NAME", "dpm-dev-db") %>
 
 test:
   <<: *default
@@ -22,4 +22,4 @@ test:
 
 production:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME", "project-prod-db") %>
+  database: <%= ENV.fetch("DB_NAME", "dpm-prod-db") %>

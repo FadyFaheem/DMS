@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: project-dev-pod
+  name: dpm-dev-pod
 spec:
   # DNS configuration - ensures DNS resolution works properly
   dnsPolicy: "None"
@@ -29,10 +29,10 @@ spec:
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: project-dev-secrets
+              name: dpm-dev-secrets
               key: db-password
         - name: POSTGRES_DB
-          value: project-dev-db
+          value: dpm-dev-db
       ports:
         - containerPort: 5432
           hostPort: 5432
@@ -54,13 +54,13 @@ spec:
         - name: DB_PORT
           value: "5432"
         - name: DB_NAME
-          value: project-dev-db
+          value: dpm-dev-db
         - name: DB_USER
           value: postgres
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: project-dev-secrets
+              name: dpm-dev-secrets
               key: db-password
         - name: RAILS_ENV
           value: development
@@ -69,7 +69,7 @@ spec:
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
-              name: project-dev-secrets
+              name: dpm-dev-secrets
               key: secret-key-base
       ports:
         - containerPort: 5000
@@ -120,7 +120,7 @@ spec:
   volumes:
     - name: pgdata
       persistentVolumeClaim:
-        claimName: project-dev-db-data-claim
+        claimName: dpm-dev-db-data-claim
     - name: api-code
       hostPath:
         # TODO: Update this path to match your project location
@@ -150,7 +150,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: project-dev-db-data-claim
+  name: dpm-dev-db-data-claim
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
