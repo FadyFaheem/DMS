@@ -19,9 +19,17 @@ module GameSerializer
       summary: summary(living),
       research: research(player),
       food_productions: food_productions(player),
+      events: events(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
     }
+  end
+
+  # Most recent park activity (births, deaths, research, builds, upgrades).
+  def events(player, limit = 20)
+    player.events.recent(limit).map do |event|
+      { id: event.id, kind: event.kind, message: event.message, created_at: iso(event.created_at) }
+    end
   end
 
   # Research tree: every tech in the catalog with an `unlocked` flag, plus the

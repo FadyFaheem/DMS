@@ -84,6 +84,7 @@ module Simulation
     def kill!
       @dino.alive = false
       @dino.health = 0.0
+      Event.log(@dino.player, "death", "#{@dino.name} died", now: @now)
     end
 
     def clamp(value)

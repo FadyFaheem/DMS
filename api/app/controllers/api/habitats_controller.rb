@@ -38,6 +38,7 @@ module Api
       current_player.transaction do
         current_player.update!(currency: current_player.currency - cost)
         habitat.update!(level: habitat.level + 1, capacity: habitat.capacity + Economy::HABITAT_CAPACITY_STEP)
+        Event.log(current_player, "upgrade", "Upgraded #{habitat.name} to level #{habitat.level}")
       end
 
       render json: GameSerializer.habitat(habitat, habitat.living_count)
@@ -48,12 +49,14 @@ module Api
     def build_habitat(terrain, cost)
       current_player.transaction do
         current_player.update!(currency: current_player.currency - cost)
-        current_player.habitats.create!(
+        habitat = current_player.habitats.create!(
           name: params[:name].to_s.strip.presence || "#{terrain.capitalize} Habitat",
           terrain: terrain,
           capacity: DEFAULT_CAPACITY.fetch(terrain, 6),
           happiness_modifier: 5
         )
+        Event.log(current_player, "build", "Built #{habitat.name}")
+        habitat
       end
     end
   end

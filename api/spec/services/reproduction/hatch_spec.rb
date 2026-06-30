@@ -29,6 +29,11 @@ RSpec.describe Reproduction::Hatch do
     expect(breeding.offspring_id).to eq(offspring.id)
   end
 
+  it "logs a birth event for the player" do
+    expect { described_class.call(breeding, rng: Random.new(7)) }
+      .to change { player.events.where(kind: "birth").count }.by(1)
+  end
+
   it "applies a giant mutation to the offspring size" do
     allow(Reproduction::Genetics).to receive(:roll_mutations).and_return([ "giant" ])
 

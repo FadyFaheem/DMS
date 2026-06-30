@@ -19,6 +19,7 @@ module Api
       current_player.transaction do
         current_player.update!(currency: current_player.currency - spec.build_cost)
         current_player.food_productions.create!(kind: spec.kind, last_collected_at: Time.current)
+        Event.log(current_player, "build", "Built #{spec.name}")
       end
 
       render json: GameSerializer.food_productions(current_player), status: :created
@@ -37,12 +38,14 @@ module Api
         return render json: { error: "Not enough currency" }, status: :unprocessable_entity
       end
 
+      spec = FoodProductionCatalog.find(building.kind)
       current_player.transaction do
         # Settle output earned at the current level before raising it.
         Simulation::FoodCollection.call(current_player)
         current_player.update!(currency: current_player.currency - cost)
         building.reload
         building.update!(level: building.level + 1)
+        Event.log(current_player, "upgrade", "Upgraded #{spec.name} to level #{building.level}")
       end
 
       render json: GameSerializer.food_productions(current_player)

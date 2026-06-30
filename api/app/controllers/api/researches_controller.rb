@@ -16,6 +16,7 @@ module Api
       current_player.transaction do
         current_player.update!(currency: current_player.currency - tech.cost)
         current_player.researches.create!(tech_key: tech.key)
+        Event.log(current_player, "research", "Researched #{tech.name}")
       end
 
       render json: GameSerializer.research(current_player), status: :created

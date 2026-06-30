@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_30_010200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_010300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,6 +61,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_010200) do
     t.index ["parent_a_id"], name: "index_dinosaurs_on_parent_a_id"
     t.index ["parent_b_id"], name: "index_dinosaurs_on_parent_b_id"
     t.index ["player_id"], name: "index_dinosaurs_on_player_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "kind", null: false
+    t.string "message", null: false
+    t.bigint "player_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_id", "created_at"], name: "index_events_on_player_id_and_created_at"
+    t.index ["player_id"], name: "index_events_on_player_id"
   end
 
   create_table "food_productions", force: :cascade do |t|
@@ -116,6 +126,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_010200) do
   add_foreign_key "dinosaurs", "dinosaurs", column: "parent_b_id"
   add_foreign_key "dinosaurs", "habitats"
   add_foreign_key "dinosaurs", "players"
+  add_foreign_key "events", "players"
   add_foreign_key "food_productions", "players"
   add_foreign_key "habitats", "players"
   add_foreign_key "researches", "players"

@@ -20,6 +20,7 @@ module Reproduction
 
       offspring = @breeding.player.dinosaurs.create!(offspring_attributes(entry, mutations))
       @breeding.update!(status: "claimed", offspring: offspring)
+      Event.log(@breeding.player, "birth", "#{offspring.name} hatched", now: @now)
       offspring
     end
 

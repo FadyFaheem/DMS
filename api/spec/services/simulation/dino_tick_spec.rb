@@ -28,6 +28,12 @@ RSpec.describe Simulation::DinoTick do
     expect(d.health).to eq(0)
   end
 
+  it "logs a death event when a dino dies" do
+    d = dino(stats_updated_at: 400.hours.ago, hunger: 100, health: 30, last_diet_quality: "wrong")
+    expect { described_class.call(d, now: Time.current) }
+      .to change { player.events.where(kind: "death").count }.by(1)
+  end
+
   it "advances the stats_updated_at watermark" do
     now = Time.current
     d = dino(stats_updated_at: 5.hours.ago)
