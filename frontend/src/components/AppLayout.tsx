@@ -4,6 +4,7 @@ import {
   AppBar,
   Box,
   Button,
+  Chip,
   Container,
   Divider,
   Drawer,
@@ -18,8 +19,10 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import ParkIcon from '@mui/icons-material/Park';
+import PaidIcon from '@mui/icons-material/Paid';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useGame } from '../context/PlayerContext';
 
 interface TabDef {
   label: string;
@@ -32,18 +35,15 @@ interface SectionDef {
   tabs?: TabDef[];
 }
 
-// Edit this to define your app's top-level navigation. Each section becomes a
-// button in the top AppBar; its tabs become left-sidebar items when that
-// section is active.
+// Top-level navigation. Each section is a top-bar button; its tabs become the
+// contextual left sidebar.
 const SECTIONS: SectionDef[] = [
-  {
-    label: 'Dashboard',
-    basePath: '/',
-    tabs: [{ label: 'Overview', path: '/' }],
-  },
+  { label: 'Park', basePath: '/', tabs: [{ label: 'Overview', path: '/' }] },
+  { label: 'Habitats', basePath: '/habitats' },
+  { label: 'Profile', basePath: '/profile' },
 ];
 
-const APP_NAME = 'Web Template';
+const APP_NAME = 'Dino Park Manager';
 const SIDEBAR_OPEN = 200;
 const SIDEBAR_COLLAPSED = 48;
 
@@ -51,6 +51,7 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { player } = useGame();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -60,13 +61,6 @@ export default function AppLayout() {
       if (
         location.pathname === section.basePath ||
         location.pathname.startsWith(section.basePath + '/')
-      ) {
-        return section;
-      }
-      if (
-        section.tabs?.some(
-          (t) => location.pathname === t.path || location.pathname.startsWith(t.path + '/'),
-        )
       ) {
         return section;
       }
@@ -82,33 +76,23 @@ export default function AppLayout() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100dvh',
-        width: '100%',
-        overflow: 'hidden',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
       <AppBar position="static" sx={{ flexShrink: 0 }}>
         <Container maxWidth={false}>
           <Toolbar disableGutters>
-            <DashboardIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+            <ParkIcon sx={{ mr: 1 }} />
             <Typography
               variant="h6"
               noWrap
-              component="span"
               onClick={() => navigate('/')}
               sx={{
-                mr: 2,
-                display: { xs: 'none', md: 'flex' },
+                mr: 3,
                 fontFamily: 'monospace',
                 fontWeight: 700,
-                letterSpacing: '.15rem',
+                letterSpacing: '.1rem',
                 color: 'inherit',
-                textDecoration: 'none',
                 cursor: 'pointer',
+                display: { xs: 'none', sm: 'block' },
               }}
             >
               {APP_NAME}
@@ -125,49 +109,33 @@ export default function AppLayout() {
               </IconButton>
             </Box>
 
-            <DashboardIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
-            <Typography
-              variant="h5"
-              noWrap
-              component="span"
-              onClick={() => navigate('/')}
-              sx={{
-                mr: 2,
-                display: { xs: 'flex', md: 'none' },
-                flexGrow: 1,
-                fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '.15rem',
-                color: 'inherit',
-                textDecoration: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {APP_NAME}
-            </Typography>
-
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-              {SECTIONS.map((section) => {
-                const isActive = activeSection === section;
-                return (
-                  <Button
-                    key={section.basePath}
-                    onClick={() => navigate(section.basePath)}
-                    sx={{
-                      my: 2,
-                      color: 'primary.contrastText',
-                      display: 'block',
-                      fontWeight: isActive ? 700 : 400,
-                      borderBottom: isActive ? '2px solid' : '2px solid transparent',
-                      borderColor: isActive ? 'secondary.main' : 'transparent',
-                      borderRadius: 0,
-                    }}
-                  >
-                    {section.label}
-                  </Button>
-                );
-              })}
+              {SECTIONS.map((section) => (
+                <Button
+                  key={section.basePath}
+                  onClick={() => navigate(section.basePath)}
+                  sx={{
+                    my: 2,
+                    color: 'primary.contrastText',
+                    display: 'block',
+                    fontWeight: activeSection === section ? 700 : 400,
+                    borderBottom: '2px solid',
+                    borderColor: activeSection === section ? 'secondary.main' : 'transparent',
+                    borderRadius: 0,
+                  }}
+                >
+                  {section.label}
+                </Button>
+              ))}
             </Box>
+
+            <Box sx={{ flexGrow: { xs: 1, md: 0 } }} />
+            <Chip
+              icon={<PaidIcon />}
+              color="secondary"
+              label={(player?.currency ?? 0).toLocaleString()}
+              sx={{ fontWeight: 700 }}
+            />
           </Toolbar>
         </Container>
       </AppBar>
@@ -184,45 +152,14 @@ export default function AppLayout() {
           }}
         >
           <Box sx={{ py: 1 }}>
-            {SECTIONS.map((section) => {
-              const isSectionActive = activeSection === section;
-              const sectionTabs = section.tabs ?? [];
-              return (
-                <Box key={section.basePath}>
-                  <ListItemButton
-                    onClick={() => handleNavClick(section.basePath)}
-                    selected={isSectionActive && sectionTabs.length === 0}
-                    sx={{ py: 1, px: 2 }}
-                  >
-                    <ListItemText
-                      primary={section.label}
-                      primaryTypographyProps={{ fontWeight: 700, variant: 'body1' }}
-                    />
-                  </ListItemButton>
-                  {isSectionActive && sectionTabs.length > 0 && (
-                    <List disablePadding>
-                      {sectionTabs.map((tab) => (
-                        <ListItemButton
-                          key={tab.path}
-                          selected={tab.path === location.pathname}
-                          onClick={() => handleNavClick(tab.path)}
-                          sx={{ py: 0.5, pl: 4 }}
-                        >
-                          <ListItemText
-                            primary={tab.label}
-                            primaryTypographyProps={{
-                              variant: 'body2',
-                              fontWeight: tab.path === location.pathname ? 700 : 400,
-                            }}
-                          />
-                        </ListItemButton>
-                      ))}
-                    </List>
-                  )}
-                  <Divider />
-                </Box>
-              );
-            })}
+            {SECTIONS.map((section) => (
+              <Box key={section.basePath}>
+                <ListItemButton onClick={() => handleNavClick(section.basePath)} sx={{ py: 1, px: 2 }}>
+                  <ListItemText primary={section.label} primaryTypographyProps={{ fontWeight: 700 }} />
+                </ListItemButton>
+                <Divider />
+              </Box>
+            ))}
           </Box>
         </Drawer>
 
@@ -244,35 +181,16 @@ export default function AppLayout() {
               {activeTabs.map((tab) => {
                 const isActive = tab.path === location.pathname;
                 return (
-                  <Tooltip
-                    key={tab.path}
-                    title={sidebarOpen ? '' : tab.label}
-                    placement="right"
-                    enterDelay={500}
-                    enterNextDelay={300}
-                  >
+                  <Tooltip key={tab.path} title={sidebarOpen ? '' : tab.label} placement="right">
                     <ListItemButton
                       selected={isActive}
                       onClick={() => navigate(tab.path)}
-                      sx={{
-                        py: 1,
-                        px: sidebarOpen ? 2 : 0,
-                        justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                      }}
+                      sx={{ py: 1, px: sidebarOpen ? 2 : 0, justifyContent: sidebarOpen ? 'flex-start' : 'center' }}
                     >
                       {sidebarOpen ? (
-                        <ListItemText
-                          primary={tab.label}
-                          primaryTypographyProps={{
-                            variant: 'body2',
-                            fontWeight: isActive ? 700 : 400,
-                            noWrap: true,
-                          }}
-                        />
+                        <ListItemText primary={tab.label} primaryTypographyProps={{ variant: 'body2', fontWeight: isActive ? 700 : 400 }} />
                       ) : (
-                        <Typography variant="body2" sx={{ fontWeight: isActive ? 700 : 400 }}>
-                          {tab.label.charAt(0)}
-                        </Typography>
+                        <Typography variant="body2">{tab.label.charAt(0)}</Typography>
                       )}
                     </ListItemButton>
                   </Tooltip>
@@ -281,20 +199,13 @@ export default function AppLayout() {
             </List>
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 0.5 }}>
               <IconButton size="small" onClick={() => setSidebarOpen((v) => !v)}>
-                {sidebarOpen ? (
-                  <ChevronLeftIcon fontSize="small" />
-                ) : (
-                  <ChevronRightIcon fontSize="small" />
-                )}
+                {sidebarOpen ? <ChevronLeftIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
               </IconButton>
             </Box>
           </Box>
         )}
 
-        <Box
-          component="main"
-          sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}
-        >
+        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', p: { xs: 1.5, sm: 2, md: 3 } }}>
           <Outlet />
         </Box>
       </Box>
