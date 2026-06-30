@@ -8,6 +8,10 @@
 tunnel: a30a7c7b-5ad1-438c-9acc-18d230f51b23
 credentials-file: /etc/cloudflared/creds/a30a7c7b-5ad1-438c-9acc-18d230f51b23.json
 
+# Force the tunnel over HTTP/2 (TCP/443). QUIC (UDP/7844) handshakes time out on
+# many networks; cloudflared's own precheck suggests http2 in that case.
+protocol: http2
+
 ingress:
   # API requests: route /api/... to the Rails backend on port 5000
   - hostname: dms-dev.faheemlabs.com

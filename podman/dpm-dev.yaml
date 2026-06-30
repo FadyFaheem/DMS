@@ -47,7 +47,7 @@ spec:
       # Install libpq, bundle gems, then boot Rails. Gems install on each start
       # (mirrors the previous pip-on-start pattern); add `rails db:prepare &&`
       # before the server once you introduce migrations.
-      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server -b 0.0.0.0 -p 5000"]
+      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && bundle exec rails db:prepare && exec bundle exec rails server -b 0.0.0.0 -p 5000"]
       env:
         - name: DB_HOST
           value: localhost
@@ -127,12 +127,12 @@ spec:
         # Windows WSL: /mnt/c/PATH/TO/PROJECT/api
         # Linux: /path/to/project/api
         # macOS: /Users/username/path/to/project/api
-        path: /mnt/c/PROJECT_NAME/api
+        path: /mnt/c/Users/fadyf/Desktop/DMS/api
         type: Directory
     - name: frontend-code
       hostPath:
         # TODO: Update this path to match your project location
-        path: /mnt/c/PROJECT_NAME/frontend
+        path: /mnt/c/Users/fadyf/Desktop/DMS/frontend
         type: Directory
     # Mount host resolv.conf for DNS resolution
     - name: host-resolv
@@ -143,7 +143,7 @@ spec:
     - name: cloudflared-config
       hostPath:
         # TODO: Update this path to match your project location
-        path: /mnt/c/PROJECT_NAME/cloudflared
+        path: /mnt/c/Users/fadyf/Desktop/DMS/cloudflared
         type: Directory
 
 ---
