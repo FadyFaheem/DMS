@@ -34,7 +34,7 @@ import { formatDateTime } from '../utils/dateFormat';
 import DinoInspector from '../components/DinoInspector';
 import BreedingModal from '../components/BreedingModal';
 import ActiveEventsPanel from '../components/ActiveEventsPanel';
-import ParkMap from '../components/ParkMap';
+import ParkView from '../components/park3d/ParkView';
 import DinoPortrait from '../components/DinoPortrait';
 
 export default function ParkDashboardPage() {
@@ -102,7 +102,7 @@ export default function ParkDashboardPage() {
         farms={player.food_productions?.buildings ?? []}
       />
 
-      <ParkMap
+      <ParkView
         habitats={player.habitats}
         dinosaurs={player.dinosaurs}
         activeEffects={player.active_effects ?? []}
