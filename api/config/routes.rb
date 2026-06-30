@@ -10,5 +10,14 @@ Rails.application.routes.draw do
     resources :players, only: [ :create ] do
       get :me, on: :collection
     end
+
+    resources :dinosaurs, only: [ :show ] do
+      member do
+        post :feed
+        post :move
+      end
+    end
+
+    resource :food, only: [ :create ], controller: "food"
   end
 end
