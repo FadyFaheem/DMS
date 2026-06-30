@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Architecture, conventions, and workflows for AI assistants and human contributors working in this template. **Read this before making changes** -- following the established patterns keeps the template coherent and reduces the chance of accidental breakage.
+Architecture, conventions, and workflows for AI assistants and human contributors working on Dino Park Manager. **Read this before making changes** -- following the established patterns keeps the codebase coherent and reduces the chance of accidental breakage.
 
 ## Project Overview
 
-A full-stack web application template:
+Dino Park Manager is an idle/simulation game: build a dinosaur park, breed and feed dinos, expand habitats, and keep the ecosystem healthy.
 
 - **React + Vite + MUI** frontend SPA
 - **Ruby on Rails** API-only backend (Rails 8)
@@ -12,9 +12,13 @@ A full-stack web application template:
 - **Podman pods** for both dev and prod (Postgres + Rails + Vite/static + Cloudflare Tunnel)
 - **fzf-based CLI** (`cmds`) for common dev workflows
 
-The template is **single-tenant** and ships **without authentication or roles** --
-add your own auth when a project needs it. The API currently exposes only a
-`GET /health` endpoint and is a clean base for new resources.
+Identity is a low-security **portable player code** (a bearer token, no passwords). Game time is **compute-on-read**: a player's dinos and income are advanced from elapsed real time on each read (`GameClock`, scaled by `GAME_DAY_REAL_MINUTES`), so there are no background workers.
+
+### Game domain (Phase 1)
+
+- **Models** ([api/app/models](api/app/models)): `Player` (currency + food + code), `Habitat` (terrain + capacity), `Dinosaur` (stats, diet, lineage), `Breeding`; plus `Species` (catalog), `GameClock`, and `DinoReport` (a refactored legacy report powering the dashboard summary).
+- **Services** ([api/app/services](api/app/services)): `Simulation::{HealthFormula,DinoTick,ParkTick}`, `Economy`, `Feeding` / `FoodPurchase`, and `Reproduction::{Compatibility,Genetics,Hatch}` (RNG/clock injected for deterministic specs).
+- **Controllers** ([api/app/controllers/api](api/app/controllers/api)): players, dinosaurs (feed/move), habitats, food, breedings (start/claim). All but `players#create` require the player code via the `PlayerAuthentication` concern.
 
 ## Stack Summary
 
@@ -31,7 +35,7 @@ add your own auth when a project needs it. The API currently exposes only a
 | ORM | ActiveRecord | 8 |
 | Database | PostgreSQL | latest |
 | App/web server | Puma | bundled |
-| Backend tests | Minitest | bundled |
+| Backend tests | RSpec (rspec-rails) | 8 |
 | Container orchestration | Podman (`play kube`) | — |
 | Secrets | Podman secrets | — |
 | Public ingress | Cloudflare Tunnel | — |
@@ -42,24 +46,21 @@ add your own auth when a project needs it. The API currently exposes only a
 .
 ├── api/                       Rails API-only app
 │   ├── app/
-│   │   └── controllers/
-│   │       ├── application_controller.rb
-│   │       └── health_controller.rb      GET /health
-│   ├── config/
-│   │   ├── routes.rb                      route table
-│   │   ├── database.yml                   env-based DB config
-│   │   └── environments/                  dev/test/prod
-│   ├── db/
-│   │   ├── migrate/                       ActiveRecord migrations (none yet)
-│   │   └── seeds.rb
-│   ├── test/                             Minitest (health_controller_test.rb)
+│   │   ├── controllers/api/              players, dinosaurs, habitats, food, breedings
+│   │   ├── models/                       Player, Habitat, Dinosaur, Breeding, Species, GameClock, DinoReport
+│   │   ├── services/                     simulation/, reproduction/, economy, feeding
+│   │   └── serializers/                  game_serializer.rb
+│   ├── config/                           routes.rb, database.yml, environments/
+│   ├── db/migrate/                       ActiveRecord migrations
+│   ├── spec/                             RSpec (models, services, requests)
 │   └── Gemfile
 ├── frontend/                  React + Vite SPA
 │   ├── src/
-│   │   ├── api/client.ts      slim fetch wrapper (apiFetch/apiJson)
-│   │   ├── components/AppLayout.tsx       top bar + sidebar shell; SECTIONS config
+│   │   ├── api/               client (bearer code) + players/dinosaurs/habitats/food/breeding
+│   │   ├── context/PlayerContext.tsx     identity + park state
+│   │   ├── components/        AppLayout, DinoInspector, BreedingModal
 │   │   ├── hooks/useIsMobile.ts
-│   │   ├── pages/             route-level page components
+│   │   ├── pages/             ParkDashboard, Habitats, Profile
 │   │   ├── theme/theme.ts     MUI theme + brand colors
 │   │   ├── __tests__/         Vitest tests
 │   │   ├── App.tsx            Router + provider tree
@@ -94,8 +95,8 @@ add your own auth when a project needs it. The API currently exposes only a
 
 ### Frontend (React)
 
-- **Single API client.** All requests go through `apiFetch` / `apiJson` from [frontend/src/api/client.ts](frontend/src/api/client.ts): they set `Content-Type: application/json` for JSON bodies and surface server `{ error }` messages. There is no auth/token handling.
-- **No auth.** All routes are public. There is no `AuthContext`, `ProtectedRoute`, or login page. Add them per-project if a project needs auth.
+- **Single API client.** All requests go through `apiFetch` / `apiJson` from [frontend/src/api/client.ts](frontend/src/api/client.ts): they set `Content-Type: application/json`, attach the stored player code as a bearer token, and surface server `{ error }` messages.
+- **Identity.** `PlayerContext` ([frontend/src/context/PlayerContext.tsx](frontend/src/context/PlayerContext.tsx)) bootstraps a player (create-or-load) and supports login-by-code via `useGame()`. No passwords.
 - **App shell** is `AppLayout` -- a top AppBar with section buttons and a contextual left sidebar. Navigation is **data-driven** by the `SECTIONS` constant at the top of [frontend/src/components/AppLayout.tsx](frontend/src/components/AppLayout.tsx); editing that array is the way to add nav.
 - **Routing** in [frontend/src/App.tsx](frontend/src/App.tsx): pages render inside `<AppLayout />` via `<Outlet />`.
 - **Styling** uses MUI's `sx` prop and theme. **Do not** hardcode colors -- reference `theme.palette.primary.main`, `'secondary.main'`, `'text.secondary'`, etc., so projects can rebrand by editing `theme/theme.ts` alone.
@@ -104,7 +105,7 @@ add your own auth when a project needs it. The API currently exposes only a
 ### Database
 
 - **ActiveRecord migrations** under `api/db/migrate/`, applied with `rails db:migrate`. The dev/prod DB itself is created by the Postgres container (`POSTGRES_DB`); Rails owns the schema within it.
-- There are **no migrations yet** -- the template starts with an empty schema.
+- Phase 1 tables: `players`, `habitats`, `dinosaurs` (self-referential lineage), `breedings`.
 
 ## Common Commands
 
@@ -119,7 +120,7 @@ add your own auth when a project needs it. The API currently exposes only a
 | API logs | `podman logs -f project-dev-pod-rails-api` |
 | Rails console (in container) | `podman exec -w /app -it project-dev-pod-rails-api bundle exec rails console` |
 | psql shell | `podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db` |
-| Run API tests | `cd api && bundle exec rails test` |
+| Run API specs | `cd api && bundle exec rspec` |
 | Run frontend tests | `cd frontend && npx vitest run` |
 | API dev (host-only) | `cd api && bundle install && rails s -p 5000` |
 | Frontend dev (host-only) | `cd frontend && npm install && npm run dev` |
@@ -227,7 +228,7 @@ array in [frontend/src/components/AppLayout.tsx](frontend/src/components/AppLayo
 
 ### 6. Tests
 
-Add `api/test/controllers/api/widgets_controller_test.rb` (Minitest) and
+Add `api/spec/requests/api/widgets_spec.rb` (RSpec) and
 `frontend/src/__tests__/api/widgets.test.ts` (Vitest).
 
 ## Environment Variables (API)
@@ -264,11 +265,11 @@ Secret values are stored as **podman secrets**, never committed:
 
 ## Testing Conventions
 
-### API (Minitest)
+### API (RSpec)
 
-- Tests live in `api/test/`. Run with `cd api && bundle exec rails test`.
-- Controller/request tests subclass `ActionDispatch::IntegrationTest` (see `test/controllers/health_controller_test.rb`).
-- Tests need a reachable Postgres (the dev pod's, or a local instance) for the test database.
+- Specs live in `api/spec/`. Run with `cd api && bundle exec rspec`.
+- Model specs, service specs (inject a fixed clock / seeded RNG for determinism), and request specs (`type: :request`).
+- Specs need a reachable Postgres (the dev pod's, or a local instance) for the test database.
 
 ### Frontend (Vitest + Testing Library)
 
@@ -284,4 +285,5 @@ Secret values are stored as **podman secrets**, never committed:
 - ❌ **Put business logic in controllers.** Keep them thin; push logic into models/services.
 - ❌ **Commit secrets.** Never commit `podman/secrets.{dev,prod}.yaml`, `cloudflared/creds/*.json`, or a Rails `master.key`.
 - ❌ **Edit an applied migration.** Add a new migration to change schema.
-- ❌ **Re-add auth blindly.** This template is intentionally auth-free; add auth deliberately when a project requires it.
+- ❌ **Add heavy auth.** Identity is intentionally a low-security player code (it's a game); don't add passwords/JWT without a real requirement.
+- ❌ **Add background workers for game time.** Stats advance compute-on-read via `Simulation::DinoTick`/`ParkTick`; keep it that way unless the design changes.
