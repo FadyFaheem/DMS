@@ -5,6 +5,7 @@ class Player < ApplicationRecord
   has_many :researches, dependent: :destroy
   has_many :food_productions, dependent: :destroy
   has_many :events, dependent: :destroy
+  has_many :structures, dependent: :destroy
 
   # Maps a diet to the food store it draws from (insects forage from plants).
   FOOD_COLUMN = {
@@ -20,5 +21,9 @@ class Player < ApplicationRecord
   def food_for(diet)
     column = FOOD_COLUMN[diet]
     column ? public_send(column) : 0
+  end
+
+  def structure?(kind)
+    structures.exists?(kind: kind)
   end
 end

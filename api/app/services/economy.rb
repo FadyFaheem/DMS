@@ -14,6 +14,7 @@ module Economy
   FOOD_PRODUCTION_UPGRADE_BASE = 1_500
   HABITAT_UPGRADE_BASE = 2_000
   HABITAT_CAPACITY_STEP = 3
+  TREATMENT_COST_PER_DISEASE = 600
 
   module_function
 
@@ -25,6 +26,11 @@ module Economy
   # Cost to raise a habitat from `level` to `level + 1`.
   def habitat_upgrade_cost(level)
     HABITAT_UPGRADE_BASE * level
+  end
+
+  # Cost to treat a dinosaur, scaling with the number of active diseases.
+  def treatment_cost(disease_count)
+    TREATMENT_COST_PER_DISEASE * disease_count
   end
 
   def passive_income(player, now: Time.current)

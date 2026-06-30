@@ -15,8 +15,12 @@ Rails.application.routes.draw do
       member do
         post :feed
         post :move
+        post :treat
+        post :quarantine
       end
     end
+
+    resources :structures, only: [ :index, :create ]
 
     resources :habitats, only: [ :index, :create ] do
       post :upgrade, on: :member

@@ -19,6 +19,7 @@ module GameSerializer
       summary: summary(living),
       research: research(player),
       food_productions: food_productions(player),
+      structures: structures(player),
       events: events(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
@@ -88,6 +89,28 @@ module GameSerializer
     }
   end
 
+  # Buildable facilities (vet lab now; more in later milestones) with built and
+  # unlocked flags.
+  def structures(player)
+    unlocked = player.researches.pluck(:tech_key)
+    built = player.structures.pluck(:kind)
+    {
+      built: player.structures.order(:id).map do |s|
+        { id: s.id, kind: s.kind, name: StructureCatalog.find(s.kind)&.name, level: s.level }
+      end,
+      catalog: StructureCatalog.all.map do |spec|
+        {
+          kind: spec.kind,
+          name: spec.name,
+          cost: spec.cost,
+          required_tech: spec.required_tech,
+          unlocked: unlocked.include?(spec.required_tech),
+          built: built.include?(spec.kind)
+        }
+      end
+    }
+  end
+
   def food_production(building)
     spec = FoodProductionCatalog.find(building.kind)
     {
@@ -137,6 +160,7 @@ module GameSerializer
       mutations: dino.mutation_traits,
       diseases: dino.diseases.select { |d| d.cured_at.nil? }.map(&:kind),
       quarantined: dino.quarantined,
+      health_history: dino.health_history,
       parent_a_id: dino.parent_a_id,
       parent_b_id: dino.parent_b_id,
       born_at: iso(dino.born_at),

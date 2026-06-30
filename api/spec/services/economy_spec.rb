@@ -38,5 +38,9 @@ RSpec.describe Economy do
       expect(described_class.habitat_upgrade_cost(1)).to eq(Economy::HABITAT_UPGRADE_BASE)
       expect(described_class.habitat_upgrade_cost(2)).to eq(Economy::HABITAT_UPGRADE_BASE * 2)
     end
+
+    it "scales the treatment cost with the number of diseases" do
+      expect(described_class.treatment_cost(2)).to eq(Economy::TREATMENT_COST_PER_DISEASE * 2)
+    end
   end
 end

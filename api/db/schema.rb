@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_30_020200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_020400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -41,6 +41,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020200) do
     t.bigint "habitat_id"
     t.float "happiness", default: 70.0, null: false
     t.float "health", default: 100.0, null: false
+    t.jsonb "health_history", default: [], null: false
     t.float "hunger", default: 0.0, null: false
     t.string "last_diet_quality"
     t.datetime "last_fed_at"
@@ -131,6 +132,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020200) do
     t.index ["player_id"], name: "index_researches_on_player_id"
   end
 
+  create_table "structures", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "kind", null: false
+    t.integer "level", default: 1, null: false
+    t.bigint "player_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_id", "kind"], name: "index_structures_on_player_id_and_kind", unique: true
+    t.index ["player_id"], name: "index_structures_on_player_id"
+  end
+
   add_foreign_key "breedings", "dinosaurs", column: "offspring_id"
   add_foreign_key "breedings", "dinosaurs", column: "parent_a_id"
   add_foreign_key "breedings", "dinosaurs", column: "parent_b_id"
@@ -144,4 +155,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020200) do
   add_foreign_key "food_productions", "players"
   add_foreign_key "habitats", "players"
   add_foreign_key "researches", "players"
+  add_foreign_key "structures", "players"
 end
