@@ -5,13 +5,14 @@ import { TILE_HEIGHT } from './parkLayout';
 
 interface Props {
   position: [number, number];
+  color: string;
 }
 
 const BASE_Y = TILE_HEIGHT + 1.6;
 
-// A floating, bobbing red marker that draws attention to a habitat currently
+// A floating, bobbing marker that draws attention to a habitat currently
 // affected by an active event (heat spike, disease, etc.).
-export default function HazardMarker({ position }: Props) {
+export default function HazardMarker({ position, color }: Props) {
   const ref = useRef<THREE.Mesh>(null);
   const [x, z] = position;
 
@@ -24,12 +25,7 @@ export default function HazardMarker({ position }: Props) {
   return (
     <mesh ref={ref} position={[x, BASE_Y, z]}>
       <octahedronGeometry args={[0.28, 0]} />
-      <meshStandardMaterial
-        color="#d32f2f"
-        emissive="#d32f2f"
-        emissiveIntensity={0.6}
-        flatShading
-      />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} flatShading />
     </mesh>
   );
 }

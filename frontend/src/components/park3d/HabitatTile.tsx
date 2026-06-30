@@ -9,13 +9,23 @@ interface Props {
   habitat: Habitat;
   position: [number, number];
   color: string;
+  hazardColor: string;
+  crowdedColor: string;
   hasHazard: boolean;
   onSelect: (habitat: Habitat) => void;
 }
 
 // A single terrain tile: a colored slab the player can click to open the
 // habitat dialog, with a floating label and a hazard/crowding outline.
-export default function HabitatTile({ habitat, position, color, hasHazard, onSelect }: Props) {
+export default function HabitatTile({
+  habitat,
+  position,
+  color,
+  hazardColor,
+  crowdedColor,
+  hasHazard,
+  onSelect,
+}: Props) {
   const mat = useRef<THREE.MeshStandardMaterial>(null);
   const [hovered, setHovered] = useState(false);
   const [x, z] = position;
@@ -46,7 +56,7 @@ export default function HabitatTile({ habitat, position, color, hasHazard, onSel
         <boxGeometry args={[TILE_SIZE, TILE_HEIGHT, TILE_SIZE]} />
         <meshStandardMaterial ref={mat} color={color} emissive={color} flatShading />
         {(hasHazard || crowded) && (
-          <Edges scale={1.02} threshold={15} color={hasHazard ? '#d32f2f' : '#ed6c02'} />
+          <Edges scale={1.02} threshold={15} color={hasHazard ? hazardColor : crowdedColor} />
         )}
       </mesh>
 
@@ -69,7 +79,7 @@ export default function HabitatTile({ habitat, position, color, hasHazard, onSel
           }}
         >
           <div style={{ fontWeight: 700, fontSize: 13 }}>{habitat.name}</div>
-          <div style={{ fontSize: 11, color: crowded ? '#ed6c02' : '#616161' }}>
+          <div style={{ fontSize: 11, color: crowded ? crowdedColor : '#616161' }}>
             {habitat.living_count}/{habitat.capacity}
             {hasHazard ? ' · !' : ''}
           </div>

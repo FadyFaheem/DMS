@@ -107,6 +107,8 @@ export default function ParkScene({
               habitat={habitat}
               position={[layouts[i].x, layouts[i].z]}
               color={terrainColor(habitat.terrain, palette)}
+              hazardColor={theme.palette.error.main}
+              crowdedColor={theme.palette.warning.main}
               hasHazard={hazardIds.has(habitat.id)}
               onSelect={(h) => setSelectedId(h.id)}
             />
@@ -129,7 +131,7 @@ export default function ParkScene({
           {layouts
             .filter((l) => hazardIds.has(l.id))
             .map((l) => (
-              <HazardMarker key={l.id} position={[l.x, l.z]} />
+              <HazardMarker key={l.id} position={[l.x, l.z]} color={theme.palette.error.main} />
             ))}
 
           <OrbitControls
