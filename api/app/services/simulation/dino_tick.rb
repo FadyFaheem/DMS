@@ -41,7 +41,8 @@ module Simulation
 
     def advance_day(env)
       # Hunger is governed by Simulation::Consumption; DinoTick only reads it.
-      @dino.happiness = clamp(HealthFormula.happiness(happiness_modifier: env[:happiness_modifier], **env[:conditions]))
+      base_happiness = HealthFormula.happiness(happiness_modifier: env[:happiness_modifier], **env[:conditions])
+      @dino.happiness = clamp(base_happiness * env[:happiness_multiplier])
       @dino.reproduction_readiness = readiness_after
       maybe_contract_disease(env)
       delta = HealthFormula.daily_health_delta(
@@ -59,6 +60,7 @@ module Simulation
       living = habitat ? habitat.living_count : 0
       {
         happiness_modifier: habitat&.happiness_modifier.to_i,
+        happiness_multiplier: habitat ? habitat_effect_multiplier(habitat) : 1.0,
         terrain: habitat&.terrain,
         crowded: habitat&.crowded? || false,
         conditions: {
@@ -68,6 +70,13 @@ module Simulation
           with_group: living > 1
         }
       }
+    end
+
+    # Product of any active habitat-scoped event multipliers (e.g. a heat spike
+    # makes the habitat less pleasant). 1.0 when the habitat is unaffected.
+    # ponytail: one query per dino; fine for small parks, batch if parks grow.
+    def habitat_effect_multiplier(habitat)
+      habitat.active_effects.active(@now).pluck(:multiplier).inject(1.0, :*)
     end
 
     # Rule-based onset: crowding (>80% capacity) drives wetland scale rot,

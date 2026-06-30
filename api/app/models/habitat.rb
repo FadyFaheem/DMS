@@ -1,6 +1,7 @@
 class Habitat < ApplicationRecord
   belongs_to :player
   has_many :dinosaurs, dependent: :nullify
+  has_many :active_effects, dependent: :destroy
 
   validates :name, :terrain, presence: true
   validates :capacity, numericality: { only_integer: true, greater_than: 0 }

@@ -59,6 +59,18 @@ RSpec.describe Simulation::DinoTick do
     expect(safe.diseases.active).to be_empty
   end
 
+  it "scales resident happiness down under an active habitat-scoped effect" do
+    d = dino(stats_updated_at: 5.hours.ago)
+    described_class.call(d, now: Time.current)
+    baseline = d.reload.happiness
+
+    player.active_effects.create!(kind: "heat_spike", multiplier: 0.5, habitat: habitat, expires_at: 1.hour.from_now)
+    d.update!(stats_updated_at: 5.hours.ago)
+    described_class.call(d, now: Time.current)
+
+    expect(d.reload.happiness).to be_within(0.1).of(baseline * 0.5)
+  end
+
   it "advances the stats_updated_at watermark" do
     now = Time.current
     d = dino(stats_updated_at: 5.hours.ago)

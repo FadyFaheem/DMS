@@ -10,9 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_30_020400) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_030100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "active_effects", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "food_production_id"
+    t.bigint "habitat_id"
+    t.string "kind", null: false
+    t.float "multiplier", default: 1.0, null: false
+    t.bigint "player_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["food_production_id"], name: "index_active_effects_on_food_production_id"
+    t.index ["habitat_id"], name: "index_active_effects_on_habitat_id"
+    t.index ["player_id", "expires_at"], name: "index_active_effects_on_player_id_and_expires_at"
+    t.index ["player_id"], name: "index_active_effects_on_player_id"
+  end
 
   create_table "breedings", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -117,6 +132,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020400) do
     t.integer "food_meat", default: 100, null: false
     t.integer "food_plants", default: 100, null: false
     t.datetime "last_consumed_at"
+    t.datetime "last_event_roll_at"
     t.datetime "last_income_at"
     t.string "player_code", null: false
     t.datetime "updated_at", null: false
@@ -142,6 +158,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020400) do
     t.index ["player_id"], name: "index_structures_on_player_id"
   end
 
+  add_foreign_key "active_effects", "food_productions"
+  add_foreign_key "active_effects", "habitats"
+  add_foreign_key "active_effects", "players"
   add_foreign_key "breedings", "dinosaurs", column: "offspring_id"
   add_foreign_key "breedings", "dinosaurs", column: "parent_a_id"
   add_foreign_key "breedings", "dinosaurs", column: "parent_b_id"

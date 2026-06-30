@@ -20,10 +20,29 @@ module GameSerializer
       research: research(player),
       food_productions: food_productions(player),
       structures: structures(player),
+      active_effects: active_effects(player),
       events: events(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
     }
+  end
+
+  # Currently-active environmental/production events, with their target ids so
+  # the client can badge the affected habitat or farm.
+  def active_effects(player, now = Time.current)
+    player.active_effects.active(now).order(:id).map do |effect|
+      spec = effect.spec
+      {
+        id: effect.id,
+        kind: effect.kind,
+        name: spec&.name,
+        scope: spec&.scope,
+        multiplier: effect.multiplier,
+        habitat_id: effect.habitat_id,
+        food_production_id: effect.food_production_id,
+        expires_at: iso(effect.expires_at)
+      }
+    end
   end
 
   # Most recent park activity (births, deaths, research, builds, upgrades).
