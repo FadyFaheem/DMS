@@ -14,3 +14,11 @@ export function moveDino(id: number, habitatId: number): Promise<Dinosaur> {
     body: JSON.stringify({ habitat_id: habitatId }),
   });
 }
+
+export function treatDino(id: number): Promise<Dinosaur> {
+  return apiJson<Dinosaur>(`/api/dinosaurs/${id}/treat`, { method: 'POST' });
+}
+
+export function quarantineDino(id: number): Promise<Dinosaur> {
+  return apiJson<Dinosaur>(`/api/dinosaurs/${id}/quarantine`, { method: 'POST' });
+}

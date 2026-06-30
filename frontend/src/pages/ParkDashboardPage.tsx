@@ -39,6 +39,7 @@ export default function ParkDashboardPage() {
 
   if (!player) return null;
   const summary = player.summary;
+  const vetLabBuilt = player.structures?.built?.some((s) => s.kind === 'vet_lab') ?? false;
 
   return (
     <Box>
@@ -65,6 +66,7 @@ export default function ParkDashboardPage() {
         <SummaryCard label="Population" value={summary.population} />
         <SummaryCard label="Avg Health" value={summary.avg_health} />
         <SummaryCard label="Critical" value={summary.critical} />
+        <SummaryCard label="Sick" value={summary.sick ?? 0} />
         <SummaryCard
           label="Food P/M/F"
           value={`${player.food.plants}/${player.food.meat}/${player.food.fish}`}
@@ -97,6 +99,7 @@ export default function ParkDashboardPage() {
       <DinoInspector
         dino={inspected}
         habitats={player.habitats}
+        vetLabBuilt={vetLabBuilt}
         onClose={() => setInspected(null)}
         onChanged={async () => {
           await refresh();
@@ -206,6 +209,11 @@ function DinoCard({
         <Typography variant="caption" color="text.secondary">
           {dino.species}
         </Typography>
+        {(dino.diseases ?? []).length > 0 && (
+          <Box sx={{ mt: 0.5 }}>
+            <Chip size="small" color="error" label={`Sick: ${dino.diseases.length}`} />
+          </Box>
+        )}
         <Box sx={{ mt: 1 }}>
           <Bar label="Health" value={dino.health} />
           <Bar label="Hunger" value={dino.hunger} invert />

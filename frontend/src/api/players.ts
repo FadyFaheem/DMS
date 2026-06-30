@@ -10,6 +10,12 @@ export interface Habitat {
   living_count: number;
 }
 
+export interface HealthHistoryEntry {
+  at: string;
+  action: string;
+  diseases?: string[];
+}
+
 export interface Dinosaur {
   id: number;
   name: string;
@@ -34,6 +40,9 @@ export interface Dinosaur {
   parent_a_id: number | null;
   parent_b_id: number | null;
   born_at: string;
+  diseases: string[];
+  quarantined: boolean;
+  health_history: HealthHistoryEntry[];
 }
 
 export interface ParkSummary {
@@ -41,6 +50,7 @@ export interface ParkSummary {
   by_category: Record<string, number>;
   avg_health: number;
   critical: number;
+  sick: number;
 }
 
 export interface ResearchTech {
@@ -84,6 +94,27 @@ export interface FoodProductionState {
   catalog: FoodBuildingCatalogEntry[];
 }
 
+export interface BuiltStructure {
+  id: number;
+  kind: string;
+  name: string | null;
+  level: number;
+}
+
+export interface StructureCatalogEntry {
+  kind: string;
+  name: string;
+  cost: number;
+  required_tech: string;
+  unlocked: boolean;
+  built: boolean;
+}
+
+export interface StructuresState {
+  built: BuiltStructure[];
+  catalog: StructureCatalogEntry[];
+}
+
 export interface ParkEvent {
   id: number;
   kind: string;
@@ -102,6 +133,7 @@ export interface Player {
   summary: ParkSummary;
   research: ResearchState;
   food_productions: FoodProductionState;
+  structures: StructuresState;
   events: ParkEvent[];
 }
 

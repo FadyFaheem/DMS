@@ -13,19 +13,21 @@ import {
   Typography,
 } from '@mui/material';
 import type { Dinosaur, Habitat } from '../api/players';
-import { feedDino, moveDino } from '../api/dinosaurs';
+import { feedDino, moveDino, treatDino, quarantineDino } from '../api/dinosaurs';
 import { statusColor } from '../utils/status';
+import { formatDateTime } from '../utils/dateFormat';
 
 const DIETS = ['plants', 'meat', 'fish', 'insects'];
 
 interface Props {
   dino: Dinosaur | null;
   habitats: Habitat[];
+  vetLabBuilt: boolean;
   onClose: () => void;
   onChanged: () => Promise<void> | void;
 }
 
-export default function DinoInspector({ dino, habitats, onClose, onChanged }: Props) {
+export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, onChanged }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [moveTo, setMoveTo] = useState<number | ''>('');
@@ -60,6 +62,15 @@ export default function DinoInspector({ dino, habitats, onClose, onChanged }: Pr
                 <Chip key={m} size="small" color="secondary" label={m} />
               ))}
             </Stack>
+
+            {((dino.diseases ?? []).length > 0 || dino.quarantined) && (
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
+                {(dino.diseases ?? []).map((d) => (
+                  <Chip key={d} size="small" color="error" label={d.replace(/_/g, ' ')} />
+                ))}
+                {dino.quarantined && <Chip size="small" color="warning" label="quarantined" />}
+              </Stack>
+            )}
 
             <StatRow label="Health" value={dino.health} />
             <StatRow label="Hunger" value={dino.hunger} invert />
@@ -119,10 +130,53 @@ export default function DinoInspector({ dino, habitats, onClose, onChanged }: Pr
                   </MenuItem>
                 ))}
               </Select>
-              <Button disabled={busy || moveTo === ''} onClick={() => act(() => moveDino(dino.id, Number(moveTo)))}>
+              <Button
+                disabled={busy || moveTo === ''}
+                onClick={() => act(() => moveDino(dino.id, Number(moveTo)))}
+              >
                 Move
               </Button>
             </Stack>
+
+            <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+              Health
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="contained"
+                color="error"
+                disabled={busy || !vetLabBuilt || (dino.diseases ?? []).length === 0}
+                onClick={() => act(() => treatDino(dino.id))}
+              >
+                {vetLabBuilt ? 'Treat' : 'Needs Vet Lab'}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={busy}
+                onClick={() => act(() => quarantineDino(dino.id))}
+              >
+                {dino.quarantined ? 'Release' : 'Quarantine'}
+              </Button>
+            </Stack>
+
+            {(dino.health_history ?? []).length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+                  History
+                </Typography>
+                <Stack spacing={0.5}>
+                  {(dino.health_history ?? []).map((entry, index) => (
+                    <Typography key={index} variant="caption" color="text.secondary">
+                      {entry.action}
+                      {entry.diseases?.length ? `: ${entry.diseases.join(', ')}` : ''} —{' '}
+                      {formatDateTime(entry.at)}
+                    </Typography>
+                  ))}
+                </Stack>
+              </>
+            )}
 
             {error && (
               <Alert severity="error" sx={{ mt: 2 }}>

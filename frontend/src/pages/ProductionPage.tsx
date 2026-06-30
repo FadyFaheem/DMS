@@ -13,6 +13,7 @@ import {
 import { useGame } from '../context/PlayerContext';
 import type { FoodBuilding, FoodBuildingCatalogEntry } from '../api/players';
 import { buildProduction, upgradeProduction } from '../api/production';
+import { buildStructure } from '../api/structures';
 
 function storeLabel(column: string | null): string {
   return column ? column.replace('food_', '') : '';
@@ -26,6 +27,7 @@ export default function ProductionPage() {
   if (!player) return null;
   const { buildings, catalog } = player.food_productions;
   const advancedUnlocked = player.research.unlocked.includes('advanced_farming');
+  const facilities = player.structures?.catalog ?? [];
 
   const run = async (key: string, action: () => Promise<unknown>) => {
     setBusy(key);
@@ -82,6 +84,43 @@ export default function ProductionPage() {
               busy={busy === `up-${building.id}`}
               onUpgrade={() => run(`up-${building.id}`, () => upgradeProduction(building.id))}
             />
+          </Grid>
+        ))}
+      </Grid>
+
+      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+        Facilities
+      </Typography>
+      <Grid container spacing={2}>
+        {facilities.map((facility) => (
+          <Grid key={facility.kind} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6">{facility.name}</Typography>
+                  <Chip size="small" label={facility.cost.toLocaleString()} />
+                </Stack>
+                {!facility.unlocked && (
+                  <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 1 }}>
+                    Requires: {facility.required_tech}
+                  </Typography>
+                )}
+                <Button
+                  sx={{ mt: 1.5 }}
+                  size="small"
+                  variant="contained"
+                  disabled={
+                    facility.built ||
+                    !facility.unlocked ||
+                    player.currency < facility.cost ||
+                    busy === `fac-${facility.kind}`
+                  }
+                  onClick={() => run(`fac-${facility.kind}`, () => buildStructure(facility.kind))}
+                >
+                  {facility.built ? 'Built' : 'Build'}
+                </Button>
+              </CardContent>
+            </Card>
           </Grid>
         ))}
       </Grid>

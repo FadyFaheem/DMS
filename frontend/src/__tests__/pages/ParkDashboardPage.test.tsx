@@ -36,9 +36,13 @@ const player = {
       parent_a_id: null,
       parent_b_id: null,
       born_at: '2026-01-01T00:00:00Z',
+      diseases: [],
+      quarantined: false,
+      health_history: [],
     },
   ],
-  summary: { population: 1, by_category: { carnivore: 1 }, avg_health: 80, critical: 0 },
+  summary: { population: 1, by_category: { carnivore: 1 }, avg_health: 80, critical: 0, sick: 0 },
+  structures: { built: [], catalog: [] },
   events: [{ id: 1, kind: 'birth', message: 'Rexy hatched', created_at: '2026-01-02T00:00:00Z' }],
 };
 
@@ -64,5 +68,6 @@ describe('ParkDashboardPage', () => {
     expect(screen.getByText("Ada's Park")).toBeInTheDocument();
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByText('Rexy hatched')).toBeInTheDocument();
+    expect(screen.getByText('Sick')).toBeInTheDocument();
   });
 });
