@@ -2,6 +2,9 @@
 # game can run at a relaxed pace in production and be accelerated in tests.
 module GameClock
   DAYS_PER_MONTH = 30.0
+  # Fixed reference point for an absolute, stable game-day index (used to seed
+  # deterministic per-day event rolls). Never change this or seeds shift.
+  EPOCH = Time.utc(2000, 1, 1).freeze
 
   module_function
 
@@ -21,5 +24,12 @@ module GameClock
 
   def real_seconds_for_game_days(days)
     days * real_minutes_per_game_day * 60
+  end
+
+  # Absolute whole-game-day index for a moment in time, counted from EPOCH. The
+  # same calendar game-day always maps to the same integer, so seeding an RNG
+  # with it yields a stable per-day roll under compute-on-read.
+  def absolute_game_day(time)
+    game_days_between(EPOCH, time).floor
   end
 end

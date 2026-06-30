@@ -70,4 +70,73 @@ describe('ParkDashboardPage', () => {
     expect(screen.getByText('Rexy hatched')).toBeInTheDocument();
     expect(screen.getByText('Sick')).toBeInTheDocument();
   });
+
+  it('renders the active events banner from /me', async () => {
+    const withEvents = {
+      ...player,
+      habitats: [
+        {
+          id: 3,
+          name: 'Volcano Rim',
+          terrain: 'volcanic',
+          capacity: 4,
+          level: 1,
+          happiness_modifier: 0,
+          living_count: 2,
+        },
+      ],
+      food_productions: {
+        buildings: [
+          {
+            id: 7,
+            kind: 'plant_farm',
+            name: 'Plant Farm',
+            level: 1,
+            food_column: 'food_plants',
+            output_per_day: 50,
+            prey: false,
+            prey_population: 0,
+            prey_capacity: 0,
+            last_collected_at: null,
+          },
+        ],
+        catalog: [],
+      },
+      active_effects: [
+        {
+          id: 1,
+          kind: 'heat_spike',
+          name: 'Heat Spike',
+          scope: 'habitat',
+          multiplier: 0.5,
+          habitat_id: 3,
+          food_production_id: null,
+          expires_at: '2026-02-01T00:00:00Z',
+        },
+        {
+          id: 2,
+          kind: 'pest',
+          name: 'Pest Outbreak',
+          scope: 'food_production',
+          multiplier: 0.5,
+          habitat_id: null,
+          food_production_id: 7,
+          expires_at: '2026-02-01T00:00:00Z',
+        },
+      ],
+    };
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(withEvents), { status: 200 }));
+
+    render(
+      <PlayerProvider>
+        <MemoryRouter>
+          <ParkDashboardPage />
+        </MemoryRouter>
+      </PlayerProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Active Events')).toBeInTheDocument());
+    expect(screen.getByText(/Heat Spike · Volcano Rim/)).toBeInTheDocument();
+    expect(screen.getByText(/Pest Outbreak · Plant Farm/)).toBeInTheDocument();
+  });
 });

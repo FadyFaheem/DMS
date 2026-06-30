@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { useGame } from '../context/PlayerContext';
 import { buildHabitat, upgradeHabitat } from '../api/habitats';
+import { effectImpactLabel, effectLabel } from '../utils/effects';
 
 const TERRAINS = ['forest', 'grassland', 'wetland', 'volcanic', 'aquatic'];
 
@@ -30,6 +31,7 @@ export default function HabitatsPage() {
   if (!player) return null;
 
   const canUpgrade = player.research.unlocked.includes('habitat_expansion');
+  const effects = player.active_effects ?? [];
 
   const build = async () => {
     setBusy(true);
@@ -98,6 +100,8 @@ export default function HabitatsPage() {
       <Grid container spacing={2}>
         {player.habitats.map((habitat) => {
           const residents = player.dinosaurs.filter((d) => d.habitat_id === habitat.id && d.alive);
+          const conditions = effects.filter((e) => e.habitat_id === habitat.id);
+          const crowded = habitat.living_count > habitat.capacity * 0.8;
           return (
             <Grid key={habitat.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card>
@@ -118,6 +122,19 @@ export default function HabitatsPage() {
                     value={Math.min(100, (habitat.living_count / habitat.capacity) * 100)}
                     color={habitat.living_count > habitat.capacity ? 'error' : 'primary'}
                   />
+                  {(conditions.length > 0 || crowded) && (
+                    <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                      {crowded && <Chip size="small" color="warning" label="Crowded" />}
+                      {conditions.map((effect) => (
+                        <Chip
+                          key={effect.id}
+                          size="small"
+                          color="error"
+                          label={`${effectLabel(effect)} ${effectImpactLabel(effect)}`}
+                        />
+                      ))}
+                    </Stack>
+                  )}
                   <Box sx={{ mt: 1 }}>
                     {residents.map((d) => (
                       <Chip key={d.id} size="small" label={d.name} sx={{ mr: 0.5, mb: 0.5 }} />

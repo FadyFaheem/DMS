@@ -58,4 +58,15 @@ RSpec.describe Simulation::Consumption do
 
     expect(d.diseases.active.pluck(:kind)).not_to include("malnutrition")
   end
+
+  it "burns extra plant food when a habitat is overpopulated" do
+    crowded = player.habitats.create!(name: "Pen", terrain: "forest", capacity: 1)
+    3.times { dino(size_lbs: 1000, habitat: crowded) } # two over capacity, ration 1 each
+    player.update!(food_plants: 1000, last_consumed_at: 1.hour.ago)
+
+    described_class.call(player, now: Time.current)
+
+    extra = 2 * Simulation::Consumption::OVERPOP_PLANT_DRAIN_PER_DINO
+    expect(player.reload.food_plants).to eq(1000 - 3 - extra)
+  end
 end

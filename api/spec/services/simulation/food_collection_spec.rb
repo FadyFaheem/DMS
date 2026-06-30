@@ -41,4 +41,69 @@ RSpec.describe Simulation::FoodCollection do
     expect(player.reload.food_plants).to eq(0)
     expect(building.reload.last_collected_at).to be_within(1.second).of(collected_before)
   end
+
+  describe "production events" do
+    it "reduces a farm's output by an active effect's multiplier" do
+      building = player.food_productions.create!(kind: "plant_farm", last_collected_at: 2.hours.ago)
+      player.active_effects.create!(kind: "pest", multiplier: 0.5, food_production: building, expires_at: 1.hour.from_now)
+
+      described_class.call(player, now: Time.current)
+
+      expect(player.reload.food_plants).to eq((2 * 50 * 0.5).to_i)
+    end
+
+    it "ignores effects that have expired" do
+      building = player.food_productions.create!(kind: "plant_farm", last_collected_at: 2.hours.ago)
+      player.active_effects.create!(kind: "pest", multiplier: 0.5, food_production: building, expires_at: 1.hour.ago)
+
+      described_class.call(player, now: Time.current)
+
+      expect(player.reload.food_plants).to eq(2 * 50)
+    end
+  end
+
+  describe "prey pools" do
+    it "depletes the prey pool as a hunting ground produces" do
+      building = player.food_productions.create!(
+        kind: "hunting_ground", level: 3, prey_capacity: 240, prey_population: 240, last_collected_at: 3.hours.ago
+      )
+
+      described_class.call(player, now: Time.current)
+
+      expect(building.reload.prey_population).to be < 240
+      expect(player.reload.food_meat).to be > 0
+    end
+
+    it "regrows a depleted pool over game-days" do
+      building = player.food_productions.create!(
+        kind: "hunting_ground", level: 1, prey_capacity: 240, prey_population: 0, last_collected_at: 4.hours.ago
+      )
+
+      described_class.call(player, now: Time.current)
+
+      expect(building.reload.prey_population).to be > 0
+    end
+
+    it "crashes output to zero when the pool is empty (overhunting)" do
+      player.food_productions.create!(
+        kind: "hunting_ground", level: 5, prey_capacity: 240, prey_population: 0, last_collected_at: 1.hour.ago
+      )
+
+      described_class.call(player, now: Time.current)
+
+      expect(player.reload.food_meat).to eq(0)
+    end
+
+    it "stacks an algal bloom on top of prey limits for fishing ponds" do
+      building = player.food_productions.create!(
+        kind: "fishing_pond", level: 1, prey_capacity: 210, prey_population: 210, last_collected_at: 2.hours.ago
+      )
+      player.active_effects.create!(kind: "algae", multiplier: 0.4, food_production: building, expires_at: 1.hour.from_now)
+
+      described_class.call(player, now: Time.current)
+
+      # 2 game-days * 35 caught, then halved-ish by the 0.4 bloom multiplier.
+      expect(player.reload.food_fish).to eq((2 * 35 * 0.4).to_i)
+    end
+  end
 end

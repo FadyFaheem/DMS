@@ -76,6 +76,9 @@ export interface FoodBuilding {
   level: number;
   food_column: string | null;
   output_per_day: number;
+  prey: boolean;
+  prey_population: number;
+  prey_capacity: number;
   last_collected_at: string | null;
 }
 
@@ -122,6 +125,19 @@ export interface ParkEvent {
   created_at: string;
 }
 
+export type EffectScope = 'habitat' | 'food_production';
+
+export interface ActiveEffect {
+  id: number;
+  kind: string;
+  name: string | null;
+  scope: EffectScope | null;
+  multiplier: number;
+  habitat_id: number | null;
+  food_production_id: number | null;
+  expires_at: string | null;
+}
+
 export interface Player {
   id: number;
   player_code: string;
@@ -134,6 +150,7 @@ export interface Player {
   research: ResearchState;
   food_productions: FoodProductionState;
   structures: StructuresState;
+  active_effects: ActiveEffect[];
   events: ParkEvent[];
 }
 

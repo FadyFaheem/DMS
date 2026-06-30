@@ -69,4 +69,52 @@ describe('ProductionPage', () => {
       ),
     );
   });
+
+  it('shows the prey pool and active effect badges on a farm', async () => {
+    const withPrey = {
+      ...player,
+      active_effects: [
+        {
+          id: 9,
+          kind: 'algae',
+          name: 'Algal Bloom',
+          scope: 'food_production',
+          multiplier: 0.4,
+          habitat_id: null,
+          food_production_id: 5,
+          expires_at: '2026-02-01T00:00:00Z',
+        },
+      ],
+      food_productions: {
+        buildings: [
+          {
+            id: 5,
+            kind: 'fishing_pond',
+            name: 'Fishing Pond',
+            level: 1,
+            food_column: 'food_fish',
+            output_per_day: 35,
+            prey: true,
+            prey_population: 120,
+            prey_capacity: 210,
+            last_collected_at: null,
+          },
+        ],
+        catalog: player.food_productions.catalog,
+      },
+    };
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(withPrey), { status: 200 }));
+
+    render(
+      <PlayerProvider>
+        <MemoryRouter>
+          <ProductionPage />
+        </MemoryRouter>
+      </PlayerProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Prey pool')).toBeInTheDocument());
+    expect(screen.getByText('120/210')).toBeInTheDocument();
+    expect(screen.getByText(/Algal Bloom -60%/)).toBeInTheDocument();
+  });
 });

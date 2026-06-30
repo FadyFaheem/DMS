@@ -13,6 +13,10 @@ module Simulation
     HUNGER_PER_DAY = 12.0
     MALNUTRITION_DAYS = 3
     MAX_CATCHUP_DAYS = 3650
+    # Extra plant food burned per game-day for each dino a habitat holds over its
+    # capacity. ponytail: abstracted overgrazing against the global plant store;
+    # per-habitat stockpiles (and diet-aware grazing) arrive in 3D.
+    OVERPOP_PLANT_DRAIN_PER_DINO = 4
 
     def self.call(player, now: Time.current)
       new(player, now).call
@@ -31,10 +35,14 @@ module Simulation
       days = [ days, MAX_CATCHUP_DAYS ].min
       dinos = @player.dinosaurs.alive.to_a
       stores = current_stores
+      overgraze = overpopulation_plant_drain
       unfed = Hash.new(0)
       last_day_fed = {}
 
-      days.times { feed_one_day(dinos, stores, unfed, last_day_fed) }
+      days.times do
+        feed_one_day(dinos, stores, unfed, last_day_fed)
+        stores[:food_plants] = [ stores[:food_plants] - overgraze, 0 ].max
+      end
 
       persist_stores(stores, since, days)
       dinos.each { |dino| apply_effects(dino, days, unfed[dino.id], last_day_fed[dino.id]) }
@@ -63,6 +71,13 @@ module Simulation
 
     def current_stores
       { food_plants: @player.food_plants, food_meat: @player.food_meat, food_fish: @player.food_fish }
+    end
+
+    # Overcrowded habitats overgraze: each dino over a habitat's capacity burns
+    # extra plant food per game-day, so unchecked overpopulation starves the park.
+    def overpopulation_plant_drain
+      over = @player.habitats.sum { |habitat| [ habitat.living_count - habitat.capacity, 0 ].max }
+      over * OVERPOP_PLANT_DRAIN_PER_DINO
     end
 
     def persist_stores(stores, since, days)

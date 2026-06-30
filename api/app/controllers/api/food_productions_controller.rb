@@ -18,7 +18,10 @@ module Api
 
       current_player.transaction do
         current_player.update!(currency: current_player.currency - spec.build_cost)
-        current_player.food_productions.create!(kind: spec.kind, last_collected_at: Time.current)
+        current_player.food_productions.create!(
+          kind: spec.kind, last_collected_at: Time.current,
+          prey_capacity: spec.prey_capacity, prey_population: spec.prey_capacity
+        )
         Event.log(current_player, "build", "Built #{spec.name}")
       end
 

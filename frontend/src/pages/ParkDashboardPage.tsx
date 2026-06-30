@@ -30,6 +30,7 @@ import { statusColor } from '../utils/status';
 import { formatDateTime } from '../utils/dateFormat';
 import DinoInspector from '../components/DinoInspector';
 import BreedingModal from '../components/BreedingModal';
+import ActiveEventsPanel from '../components/ActiveEventsPanel';
 
 export default function ParkDashboardPage() {
   const { player, refresh } = useGame();
@@ -72,6 +73,12 @@ export default function ParkDashboardPage() {
           value={`${player.food.plants}/${player.food.meat}/${player.food.fish}`}
         />
       </Grid>
+
+      <ActiveEventsPanel
+        effects={player.active_effects ?? []}
+        habitats={player.habitats}
+        farms={player.food_productions?.buildings ?? []}
+      />
 
       <Typography variant="h6" gutterBottom>
         Dinosaurs
@@ -132,7 +139,9 @@ function SummaryCard({ label, value }: { label: string; value: number | string }
   );
 }
 
-function eventColor(kind: string): 'success' | 'error' | 'info' | 'primary' | 'default' {
+function eventColor(
+  kind: string,
+): 'success' | 'error' | 'info' | 'primary' | 'warning' | 'default' {
   switch (kind) {
     case 'birth':
       return 'success';
@@ -143,6 +152,8 @@ function eventColor(kind: string): 'success' | 'error' | 'info' | 'primary' | 'd
     case 'build':
     case 'upgrade':
       return 'primary';
+    case 'event':
+      return 'warning';
     default:
       return 'default';
   }
