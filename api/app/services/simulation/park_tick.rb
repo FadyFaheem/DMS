@@ -11,6 +11,8 @@ module Simulation
       player.dinosaurs.alive.find_each { |dino| DinoTick.call(dino, now:) }
       Economy.passive_income(player, now:)
       AttractionIncome.call(player, now:)
+      # Achievements/goals settle last, off the freshly advanced park state.
+      Goals::Evaluation.call(player, now:)
       player
     end
   end

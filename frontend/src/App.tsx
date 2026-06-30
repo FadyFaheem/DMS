@@ -7,6 +7,7 @@ import HabitatsPage from './pages/HabitatsPage';
 import SpeciesPage from './pages/SpeciesPage';
 import ResearchPage from './pages/ResearchPage';
 import ProductionPage from './pages/ProductionPage';
+import GoalsPage from './pages/GoalsPage';
 import ProfilePage from './pages/ProfilePage';
 import { appTheme } from './theme/theme';
 
@@ -39,6 +40,7 @@ function GameRoutes() {
         <Route path="species" element={<SpeciesPage />} />
         <Route path="research" element={<ResearchPage />} />
         <Route path="production" element={<ProductionPage />} />
+        <Route path="goals" element={<GoalsPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

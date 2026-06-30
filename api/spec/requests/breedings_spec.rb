@@ -62,6 +62,24 @@ RSpec.describe "Api::Breedings", type: :request do
     end
   end
 
+  describe "GET /api/breedings/preview" do
+    it "returns a probabilistic offspring preview" do
+      get "/api/breedings/preview", params: { parent_a_id: dad.id, parent_b_id: mom.id }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["compatible"]).to be(true)
+      expect(body["cost"]).to eq(Economy::BREEDING_COST)
+      expect(body["species_options"].first["key"]).to eq("triceratops")
+      expect(body["genetics_quality"]).to include("min", "expected", "max")
+    end
+
+    it "requires a player code" do
+      get "/api/breedings/preview", params: { parent_a_id: dad.id, parent_b_id: mom.id }
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   describe "POST /api/breedings/:id/claim" do
     it "hatches a ready breeding into a new dino" do
       breeding = player.breedings.create!(parent_a: dad, parent_b: mom, hatches_at: 1.hour.ago, status: "incubating")

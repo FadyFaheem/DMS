@@ -35,6 +35,31 @@ RSpec.describe "Api::Habitats", type: :request do
     end
   end
 
+  describe "POST /api/habitats/:id/stock" do
+    let(:habitat) { player.habitats.create!(name: "Forest", terrain: "forest", capacity: 6) }
+
+    it "moves plant food from the global store into the habitat stockpile" do
+      player.update!(food_plants: 100)
+
+      post "/api/habitats/#{habitat.id}/stock", params: { amount: 40 }, headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(habitat.reload.food_stockpile).to eq(40)
+      expect(player.reload.food_plants).to eq(60)
+    end
+
+    it "rejects stocking more plant food than the player holds" do
+      player.update!(food_plants: 10)
+      post "/api/habitats/#{habitat.id}/stock", params: { amount: 40 }, headers: headers
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "requires a player code" do
+      post "/api/habitats/#{habitat.id}/stock", params: { amount: 10 }
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   describe "POST /api/habitats/:id/upgrade" do
     let(:habitat) { player.habitats.create!(name: "Forest", terrain: "forest", capacity: 6) }
 

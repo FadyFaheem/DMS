@@ -7,6 +7,7 @@ import {
   CardContent,
   Chip,
   Grid,
+  LinearProgress,
   Stack,
   Typography,
 } from '@mui/material';
@@ -24,6 +25,8 @@ export default function ResearchPage() {
   if (!player) return null;
   const research = player.research;
   const unlockedKeys = new Set(research.unlocked);
+  const totalTechs = research.catalog.length;
+  const unlockedCount = research.catalog.filter((tech) => tech.unlocked).length;
 
   const unlock = async (key: string) => {
     setBusyKey(key);
@@ -46,6 +49,18 @@ export default function ResearchPage() {
       <Typography color="text.secondary" sx={{ mb: 2 }}>
         Unlock technologies to build food production and expand your park.
       </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+          <Typography variant="body2">Research progress</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {unlockedCount}/{totalTechs}
+          </Typography>
+        </Stack>
+        <LinearProgress
+          variant="determinate"
+          value={totalTechs ? (unlockedCount / totalTechs) * 100 : 0}
+        />
+      </Box>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}

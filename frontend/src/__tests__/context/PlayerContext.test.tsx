@@ -14,7 +14,9 @@ const samplePlayer = {
   summary: { population: 0, by_category: {}, avg_health: 0, critical: 0 },
 };
 
-const wrapper = ({ children }: { children: ReactNode }) => <PlayerProvider>{children}</PlayerProvider>;
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <PlayerProvider>{children}</PlayerProvider>
+);
 
 describe('PlayerContext', () => {
   beforeEach(() => {

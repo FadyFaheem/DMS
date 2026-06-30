@@ -23,9 +23,32 @@ module GameSerializer
       structures: structures(player),
       attractions: attractions(player),
       active_effects: active_effects(player),
+      goals: goals(player),
+      prestige: prestige(player),
       events: events(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
+    }
+  end
+
+  # Goals/achievements with live progress (current vs threshold) and a completed
+  # flag, plus a headline completed/total count for the nav.
+  def goals(player)
+    {
+      completed: player.goal_completions.count,
+      total: GoalCatalog.all.size,
+      catalog: Goals::Evaluation.snapshot(player)
+    }
+  end
+
+  # Prestige / New Game+ state: current level, the resulting income multiplier,
+  # whether the win condition is met, and whether prestige is available.
+  def prestige(player)
+    {
+      level: player.prestige_level,
+      multiplier: player.income_multiplier.round(2),
+      won: player.won,
+      can_prestige: player.won
     }
   end
 
@@ -210,6 +233,7 @@ module GameSerializer
   end
 
   def habitat(habitat, living_count)
+    feature = TerrainCatalog.find(habitat.terrain)
     {
       id: habitat.id,
       name: habitat.name,
@@ -217,7 +241,12 @@ module GameSerializer
       capacity: habitat.capacity,
       level: habitat.level,
       happiness_modifier: habitat.happiness_modifier,
-      living_count: living_count
+      living_count: living_count,
+      temperature: habitat.effective_temperature,
+      humidity: habitat.effective_humidity,
+      food_stockpile: habitat.food_stockpile,
+      feature: feature&.feature,
+      feature_label: feature&.feature_label
     }
   end
 
@@ -243,6 +272,10 @@ module GameSerializer
       status: dino.status,
       alive: dino.alive,
       mutations: dino.mutation_traits,
+      genetics_quality: dino.genetics_quality,
+      temperature_min: dino.temperature_min,
+      temperature_max: dino.temperature_max,
+      diet_restrictions: dino.diet_restrictions,
       diseases: dino.diseases.select { |d| d.cured_at.nil? }.map(&:kind),
       quarantined: dino.quarantined,
       health_history: dino.health_history,

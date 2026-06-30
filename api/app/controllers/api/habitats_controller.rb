@@ -22,6 +22,26 @@ module Api
       render json: GameSerializer.habitat(habitat, 0), status: :created
     end
 
+    # POST /api/habitats/:id/stock { amount } -- move plant food from the
+    # player's global stores into this habitat's local grazing stockpile.
+    def stock
+      habitat = current_player.habitats.find_by(id: params[:id])
+      return render json: { error: "Habitat not found" }, status: :not_found unless habitat
+
+      amount = params[:amount].to_i
+      return render json: { error: "Amount must be positive" }, status: :unprocessable_entity unless amount.positive?
+      if current_player.food_plants < amount
+        return render json: { error: "Not enough plant food" }, status: :unprocessable_entity
+      end
+
+      current_player.transaction do
+        current_player.update!(food_plants: current_player.food_plants - amount)
+        habitat.update!(food_stockpile: habitat.food_stockpile + amount)
+      end
+
+      render json: GameSerializer.habitat(habitat, habitat.living_count)
+    end
+
     # POST /api/habitats/:id/upgrade
     def upgrade
       habitat = current_player.habitats.find_by(id: params[:id])

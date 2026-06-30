@@ -13,6 +13,14 @@ module Api
       render json: current_player.breedings.order(created_at: :desc).map { |b| breeding_json(b) }
     end
 
+    # GET /api/breedings/preview?parent_a_id=&parent_b_id= -- probabilistic
+    # offspring preview (species/traits/quality/cost) with no side effects.
+    def preview
+      parent_a = current_player.dinosaurs.find(params[:parent_a_id])
+      parent_b = current_player.dinosaurs.find(params[:parent_b_id])
+      render json: Reproduction::Prediction.call(parent_a, parent_b, current_player)
+    end
+
     # POST /api/breedings { parent_a_id, parent_b_id }
     def create
       parent_a = current_player.dinosaurs.find(params[:parent_a_id])

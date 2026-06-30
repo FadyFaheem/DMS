@@ -23,13 +23,22 @@ const dino = {
   status: 'Struggling',
   alive: true,
   mutations: [],
-  parent_a_id: null,
-  parent_b_id: null,
+  genetics_quality: 88,
+  temperature_min: 16,
+  temperature_max: 32,
+  diet_restrictions: ['fish'],
+  parent_a_id: 1,
+  parent_b_id: 2,
   born_at: '2026-01-01T00:00:00Z',
   diseases: ['parasites'],
   quarantined: false,
   health_history: [],
 };
+
+const parents = [
+  { ...dino, id: 1, name: 'Mom', genetics_quality: 80, parent_a_id: null, parent_b_id: null },
+  { ...dino, id: 2, name: 'Dad', genetics_quality: 82, parent_a_id: null, parent_b_id: null },
+];
 
 describe('DinoInspector', () => {
   beforeEach(() => {
@@ -62,5 +71,24 @@ describe('DinoInspector', () => {
         expect.objectContaining({ method: 'POST' }),
       ),
     );
+  });
+
+  it('shows genetics quality, allergies, and a lineage tree', () => {
+    render(
+      <DinoInspector
+        dino={dino}
+        habitats={[]}
+        dinos={[dino, ...parents]}
+        vetLabBuilt={false}
+        onClose={() => {}}
+        onChanged={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/Genetics \(IV 88\)/)).toBeInTheDocument();
+    expect(screen.getByText('Allergies:')).toBeInTheDocument();
+    expect(screen.getByText('Lineage')).toBeInTheDocument();
+    expect(screen.getByText(/Mom/)).toBeInTheDocument();
+    expect(screen.getByText(/Dad/)).toBeInTheDocument();
   });
 });

@@ -59,6 +59,29 @@ RSpec.describe Simulation::Consumption do
     expect(d.diseases.active.pluck(:kind)).not_to include("malnutrition")
   end
 
+  it "grazes a habitat's plant stockpile before touching the global store" do
+    habitat.update!(food_stockpile: 100)
+    d = dino(size_lbs: 2000) # herbivore, ration 1/day
+    player.update!(food_plants: 1000, last_consumed_at: 5.hours.ago)
+
+    described_class.call(player, now: Time.current)
+
+    expect(habitat.reload.food_stockpile).to eq(100 - 5) # 5 days grazed locally
+    expect(player.reload.food_plants).to eq(1000)        # global store untouched
+    expect(d.reload.last_diet_quality).to eq("preferred")
+  end
+
+  it "falls back to the global store once the stockpile runs dry" do
+    habitat.update!(food_stockpile: 2)
+    dino(size_lbs: 2000)
+    player.update!(food_plants: 1000, last_consumed_at: 5.hours.ago)
+
+    described_class.call(player, now: Time.current)
+
+    expect(habitat.reload.food_stockpile).to eq(0)        # 2 days from the stockpile
+    expect(player.reload.food_plants).to eq(1000 - 3)     # remaining 3 days from global
+  end
+
   it "burns extra plant food when a habitat is overpopulated" do
     crowded = player.habitats.create!(name: "Pen", terrain: "forest", capacity: 1)
     3.times { dino(size_lbs: 1000, habitat: crowded) } # two over capacity, ration 1 each

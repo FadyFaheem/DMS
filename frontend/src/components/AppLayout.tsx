@@ -12,6 +12,7 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Stack,
   Toolbar,
   Tooltip,
   Typography,
@@ -21,8 +22,12 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ParkIcon from '@mui/icons-material/Park';
 import PaidIcon from '@mui/icons-material/Paid';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useGame } from '../context/PlayerContext';
+import { gameDayLabel } from '../utils/gameClock';
+import Tutorial from './Tutorial';
+import EventNotifier from './EventNotifier';
 
 interface TabDef {
   label: string;
@@ -43,6 +48,7 @@ const SECTIONS: SectionDef[] = [
   { label: 'Species', basePath: '/species' },
   { label: 'Research', basePath: '/research' },
   { label: 'Production', basePath: '/production' },
+  { label: 'Goals', basePath: '/goals' },
   { label: 'Profile', basePath: '/profile' },
 ];
 
@@ -141,12 +147,20 @@ export default function AppLayout() {
             </Box>
 
             <Box sx={{ flexGrow: { xs: 1, md: 0 } }} />
-            <Chip
-              icon={<PaidIcon />}
-              color="secondary"
-              label={(player?.currency ?? 0).toLocaleString()}
-              sx={{ fontWeight: 700 }}
-            />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip
+                icon={<CalendarMonthIcon />}
+                variant="outlined"
+                label={gameDayLabel(player?.created_at)}
+                sx={{ color: 'primary.contrastText', borderColor: 'primary.contrastText' }}
+              />
+              <Chip
+                icon={<PaidIcon />}
+                color="secondary"
+                label={(player?.currency ?? 0).toLocaleString()}
+                sx={{ fontWeight: 700 }}
+              />
+            </Stack>
           </Toolbar>
         </Container>
       </AppBar>
@@ -243,6 +257,9 @@ export default function AppLayout() {
           <Outlet />
         </Box>
       </Box>
+
+      <EventNotifier />
+      <Tutorial />
     </Box>
   );
 }

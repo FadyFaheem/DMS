@@ -44,6 +44,8 @@ module Reproduction
     end
 
     def offspring_attributes(entry, mutations)
+      diet = Genetics.inherit_diet(@parent_a, @parent_b, @rng)
+      min_temp, max_temp = DinoFactory.temperature_range(entry)
       {
         habitat: @parent_a.habitat || @parent_b.habitat,
         species: entry.key,
@@ -54,7 +56,7 @@ module Reproduction
         size_lbs: Genetics.size_with_mutations(average_size, mutations),
         born_at: @now,
         generation: [ @parent_a.generation, @parent_b.generation ].max + 1,
-        diet_primary: Genetics.inherit_diet(@parent_a, @parent_b, @rng),
+        diet_primary: diet,
         diet_secondary: entry.diet_secondary,
         preferred_terrain: entry.preferred_terrain,
         social_structure: entry.social_structure,
@@ -64,6 +66,10 @@ module Reproduction
         reproduction_readiness: 0.0,
         stats_updated_at: @now,
         mutation_traits: mutations,
+        genetics_quality: Genetics.genetics_quality(@parent_a.genetics_quality, @parent_b.genetics_quality, mutations, @rng),
+        temperature_min: min_temp,
+        temperature_max: max_temp,
+        diet_restrictions: Genetics.inherit_restrictions(@parent_a, @parent_b, diet, @rng),
         parent_a: @parent_a,
         parent_b: @parent_b,
         alive: true

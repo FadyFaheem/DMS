@@ -35,3 +35,24 @@ export function startBreeding(
 export function claimBreeding(id: number): Promise<Dinosaur> {
   return apiJson<Dinosaur>(`/api/breedings/${id}/claim`, { method: 'POST' });
 }
+
+export interface BreedingPreview {
+  compatible: boolean;
+  reason: string | null;
+  cost: number;
+  expected_generation: number;
+  species_options: { key: string; name: string | null; chance: number }[];
+  diet_options: string[];
+  mutation_chance: number;
+  possible_traits: string[];
+  genetics_quality: { min: number; expected: number; max: number };
+}
+
+// Side-effect-free preview of a pairing's likely offspring (species/traits/IV/cost).
+export function previewBreeding(parentAId: number, parentBId: number): Promise<BreedingPreview> {
+  const params = new URLSearchParams({
+    parent_a_id: String(parentAId),
+    parent_b_id: String(parentBId),
+  });
+  return apiJson<BreedingPreview>(`/api/breedings/preview?${params.toString()}`);
+}

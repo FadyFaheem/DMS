@@ -37,4 +37,12 @@ RSpec.describe Feeding do
   it "rejects unknown food types" do
     expect { Feeding.call(dino, diet: "rocks") }.to raise_error(ArgumentError)
   end
+
+  it "refuses to feed a dino a diet it is allergic to" do
+    allergic = player.dinosaurs.create!(
+      DinoFactory.attributes_for(Species.find("triceratops"), player:, habitat:).merge(diet_restrictions: [ "insects" ])
+    )
+    expect { Feeding.call(allergic, diet: "insects") }.to raise_error(ArgumentError, /allergic/)
+    expect(player.reload.food_plants).to eq(100) # nothing consumed
+  end
 end

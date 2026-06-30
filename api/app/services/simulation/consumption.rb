@@ -13,6 +13,9 @@ module Simulation
     HUNGER_PER_DAY = 12.0
     MALNUTRITION_DAYS = 3
     MAX_CATCHUP_DAYS = 3650
+    # Diets that can graze a habitat's local plant stockpile before drawing from
+    # the player's global stores.
+    GRAZERS = %w[plants insects].freeze
     # Extra plant food burned per game-day for each dino a habitat holds over its
     # capacity. ponytail: abstracted overgrazing against the global plant store;
     # per-habitat stockpiles (and diet-aware grazing) arrive in 3D.
@@ -35,27 +38,31 @@ module Simulation
       days = [ days, MAX_CATCHUP_DAYS ].min
       dinos = @player.dinosaurs.alive.to_a
       stores = current_stores
+      habitats = @player.habitats.index_by(&:id)
       overgraze = overpopulation_plant_drain
       unfed = Hash.new(0)
       last_day_fed = {}
 
       days.times do
-        feed_one_day(dinos, stores, unfed, last_day_fed)
+        feed_one_day(dinos, stores, habitats, unfed, last_day_fed)
         stores[:food_plants] = [ stores[:food_plants] - overgraze, 0 ].max
       end
 
       persist_stores(stores, since, days)
+      persist_stockpiles(habitats)
       dinos.each { |dino| apply_effects(dino, days, unfed[dino.id], last_day_fed[dino.id]) }
       { days: days, short: unfed.values.count(&:positive?) }
     end
 
     private
 
-    def feed_one_day(dinos, stores, unfed, last_day_fed)
+    def feed_one_day(dinos, stores, habitats, unfed, last_day_fed)
       dinos.each do |dino|
-        column = Player::FOOD_COLUMN[dino.diet_primary]
         ration = ration_for(dino)
-        if column && stores[column] >= ration
+        column = Player::FOOD_COLUMN[dino.diet_primary]
+        if graze_stockpile(dino, ration, habitats)
+          last_day_fed[dino.id] = true
+        elsif column && stores[column] >= ration
           stores[column] -= ration
           last_day_fed[dino.id] = true
         else
@@ -63,6 +70,19 @@ module Simulation
           last_day_fed[dino.id] = false
         end
       end
+    end
+
+    # Herbivores graze a habitat's local plant stockpile first; only when the
+    # stockpile can't cover the full ration do they fall back to global stores.
+    # Returns true when the ration was satisfied from the stockpile.
+    def graze_stockpile(dino, ration, habitats)
+      return false unless GRAZERS.include?(dino.diet_primary)
+
+      habitat = habitats[dino.habitat_id]
+      return false unless habitat && habitat.food_stockpile >= ration
+
+      habitat.food_stockpile -= ration
+      true
     end
 
     def ration_for(dino)
@@ -87,6 +107,10 @@ module Simulation
         food_fish: stores[:food_fish],
         last_consumed_at: since + GameClock.real_seconds_for_game_days(days)
       )
+    end
+
+    def persist_stockpiles(habitats)
+      habitats.each_value { |habitat| habitat.save! if habitat.changed? }
     end
 
     def apply_effects(dino, days, unfed_days, fed_last_day)

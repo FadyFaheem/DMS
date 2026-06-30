@@ -52,7 +52,7 @@ module Economy
     return 0 if days <= 0
 
     living = player.dinosaurs.alive.count
-    amount = days * living * INCOME_PER_DINO_PER_DAY
+    amount = (days * living * INCOME_PER_DINO_PER_DAY * player.income_multiplier).floor
     player.update!(currency: player.currency + amount, last_income_at: now)
     amount
   end

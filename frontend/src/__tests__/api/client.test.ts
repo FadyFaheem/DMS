@@ -14,7 +14,9 @@ describe('api client', () => {
   });
 
   it('throws the server error message on failure', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ error: 'nope' }), { status: 400 }));
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: 'nope' }), { status: 400 }),
+    );
     await expect(apiJson('/api/thing')).rejects.toThrow('nope');
   });
 

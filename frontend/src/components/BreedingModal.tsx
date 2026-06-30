@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Box,
   Button,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   List,
   ListItem,
   ListItemText,
@@ -16,8 +18,8 @@ import {
   Typography,
 } from '@mui/material';
 import type { Dinosaur } from '../api/players';
-import { claimBreeding, listBreedings, startBreeding } from '../api/breeding';
-import type { Breeding } from '../api/breeding';
+import { claimBreeding, listBreedings, previewBreeding, startBreeding } from '../api/breeding';
+import type { Breeding, BreedingPreview } from '../api/breeding';
 
 // Mutations a genetic engineering lab can request (mirrors Genetics::MUTATIONS).
 const TRAITS = ['shiny', 'giant', 'dwarf'];
@@ -41,6 +43,7 @@ export default function BreedingModal({
   const [parentB, setParentB] = useState<number | ''>('');
   const [trait, setTrait] = useState<string>('');
   const [breedings, setBreedings] = useState<Breeding[]>([]);
+  const [preview, setPreview] = useState<BreedingPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -57,6 +60,21 @@ export default function BreedingModal({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) void load();
   }, [open, load]);
+
+  useEffect(() => {
+    if (parentA === '' || parentB === '' || parentA === parentB) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPreview(null);
+      return;
+    }
+    let active = true;
+    previewBreeding(Number(parentA), Number(parentB))
+      .then((result) => active && setPreview(result))
+      .catch(() => active && setPreview(null));
+    return () => {
+      active = false;
+    };
+  }, [parentA, parentB]);
 
   const alive = dinos.filter((d) => d.alive);
 
@@ -161,6 +179,8 @@ export default function BreedingModal({
             </Select>
           </Stack>
         )}
+        {preview && <BreedingPredictionPanel preview={preview} />}
+
         {error && (
           <Alert severity="error" sx={{ mb: 1 }}>
             {error}
@@ -206,5 +226,48 @@ export default function BreedingModal({
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function BreedingPredictionPanel({ preview }: { preview: BreedingPreview }) {
+  return (
+    <Box
+      sx={{ mb: 1, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}
+      data-testid="breeding-prediction"
+    >
+      <Typography variant="subtitle2" gutterBottom>
+        Predicted offspring
+      </Typography>
+      {!preview.compatible ? (
+        <Alert severity="warning">{preview.reason ?? 'These dinosaurs cannot breed.'}</Alert>
+      ) : (
+        <Stack spacing={0.75}>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
+            <Typography variant="caption" color="text.secondary">
+              Species:
+            </Typography>
+            {preview.species_options.map((option) => (
+              <Chip
+                key={option.key}
+                size="small"
+                label={`${option.name ?? option.key} ${Math.round(option.chance * 100)}%`}
+              />
+            ))}
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            Mutation chance: {Math.round(preview.mutation_chance * 100)}% ·{' '}
+            {preview.possible_traits.join(', ')}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Genetics (IV): {preview.genetics_quality.min}–{preview.genetics_quality.max} (expected{' '}
+            {preview.genetics_quality.expected})
+          </Typography>
+          <Divider />
+          <Typography variant="caption" color="text.secondary">
+            Cost: {preview.cost.toLocaleString()} · Generation {preview.expected_generation}
+          </Typography>
+        </Stack>
+      )}
+    </Box>
   );
 }

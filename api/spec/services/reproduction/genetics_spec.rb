@@ -41,4 +41,41 @@ RSpec.describe Reproduction::Genetics do
       expect(described_class.inherit_color(a, b, [ "shiny" ], Random.new(1))).to eq("iridescent")
     end
   end
+
+  describe ".genetics_quality" do
+    it "averages the parents' quality (no mutation, zero variation seed)" do
+      rng = instance_double(Random)
+      allow(rng).to receive(:rand).with(-described_class::QUALITY_VARIATION..described_class::QUALITY_VARIATION).and_return(0)
+      expect(described_class.genetics_quality(80, 90, [], rng)).to eq(85)
+    end
+
+    it "adds the mutation bonus on top of the average" do
+      rng = instance_double(Random)
+      allow(rng).to receive(:rand).and_return(0)
+      expect(described_class.genetics_quality(80, 80, [ "shiny" ], rng)).to eq(80 + described_class::QUALITY_BONUS["shiny"])
+    end
+
+    it "clamps to 0-100" do
+      rng = instance_double(Random)
+      allow(rng).to receive(:rand).and_return(0)
+      expect(described_class.genetics_quality(98, 100, [ "shiny" ], rng)).to eq(100)
+    end
+  end
+
+  describe ".inherit_restrictions" do
+    it "unions the parents' allergies and never includes the primary diet" do
+      a = instance_double(Dinosaur, diet_restrictions: [ "fish" ])
+      b = instance_double(Dinosaur, diet_restrictions: [ "meat" ])
+      result = described_class.inherit_restrictions(a, b, "meat", Random.new(1), chance: 0.0)
+      expect(result).to contain_exactly("fish")
+    end
+
+    it "can introduce a new allergy at the given chance" do
+      a = instance_double(Dinosaur, diet_restrictions: [])
+      b = instance_double(Dinosaur, diet_restrictions: [])
+      result = described_class.inherit_restrictions(a, b, "plants", Random.new(1), chance: 1.0)
+      expect(result).not_to be_empty
+      expect(result).not_to include("plants")
+    end
+  end
 end

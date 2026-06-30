@@ -32,7 +32,7 @@ module Simulation
       return 0 if days <= 0
 
       attraction.update!(last_collected_at: since + GameClock.real_seconds_for_game_days(days))
-      spec.income_per_day * attraction.level * days
+      (spec.income_per_day * attraction.level * days * @player.income_multiplier).floor
     end
   end
 end

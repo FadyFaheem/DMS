@@ -18,6 +18,7 @@ class Feeding
 
   def call
     raise ArgumentError, "Unknown food type: #{@diet}" unless column
+    raise ArgumentError, "#{@dino.name} is allergic to #{@diet}" if allergic?
     raise InsufficientFood unless @player.public_send(column) >= UNITS_PER_FEED
 
     @player.decrement!(column, UNITS_PER_FEED)
@@ -29,6 +30,10 @@ class Feeding
 
   def column
     Player::FOOD_COLUMN[@diet]
+  end
+
+  def allergic?
+    Array(@dino.diet_restrictions).include?(@diet)
   end
 
   def quality

@@ -59,6 +59,52 @@ RSpec.describe Simulation::DinoTick do
     expect(safe.diseases.active).to be_empty
   end
 
+  it "thrives in its climate but suffers when a habitat runs too hot for its range" do
+    forest = player.habitats.create!(name: "Glade", terrain: "forest", capacity: 6)
+    volcano = player.habitats.create!(name: "Rim", terrain: "volcanic", capacity: 6)
+    attrs = DinoFactory.attributes_for(Species.find("coelophysis"), player:, habitat: forest)
+                       .merge(stats_updated_at: 5.hours.ago, hunger: 0, last_diet_quality: "preferred", health: 80)
+    comfy = player.dinosaurs.create!(attrs)
+    hot = player.dinosaurs.create!(attrs.merge(habitat: volcano))
+
+    described_class.call(comfy, now: Time.current)
+    described_class.call(hot, now: Time.current)
+
+    expect(comfy.reload.health).to be > 80
+    expect(hot.reload.health).to be < comfy.health
+  end
+
+  it "rewards a heat-tolerant dino with extra happiness in a volcanic habitat" do
+    volcano = player.habitats.create!(name: "Rim", terrain: "volcanic", capacity: 6)
+    attrs = DinoFactory.attributes_for(Species.find("coelophysis"), player:, habitat: volcano)
+                       .merge(stats_updated_at: 5.hours.ago, hunger: 0)
+    heat_lover = player.dinosaurs.create!(attrs.merge(temperature_max: 40))
+    heat_wimp = player.dinosaurs.create!(attrs.merge(temperature_max: 20))
+
+    described_class.call(heat_lover, now: Time.current)
+    described_class.call(heat_wimp, now: Time.current)
+
+    expect(heat_lover.reload.happiness).to be > heat_wimp.reload.happiness
+  end
+
+  it "unsettles a grassland herbivore that shares its range with a carnivore" do
+    calm_field = player.habitats.create!(name: "Calm", terrain: "grassland", capacity: 8)
+    risky_field = player.habitats.create!(name: "Risky", terrain: "grassland", capacity: 8)
+    calm = player.dinosaurs.create!(
+      DinoFactory.attributes_for(Species.find("triceratops"), player:, habitat: calm_field).merge(stats_updated_at: 5.hours.ago)
+    )
+    player.dinosaurs.create!(DinoFactory.attributes_for(Species.find("triceratops"), player:, habitat: calm_field))
+    risky = player.dinosaurs.create!(
+      DinoFactory.attributes_for(Species.find("triceratops"), player:, habitat: risky_field).merge(stats_updated_at: 5.hours.ago)
+    )
+    player.dinosaurs.create!(DinoFactory.attributes_for(Species.find("velociraptor"), player:, habitat: risky_field))
+
+    described_class.call(calm, now: Time.current)
+    described_class.call(risky, now: Time.current)
+
+    expect(risky.reload.happiness).to be < calm.reload.happiness
+  end
+
   it "scales resident happiness down under an active habitat-scoped effect" do
     d = dino(stats_updated_at: 5.hours.ago)
     described_class.call(d, now: Time.current)

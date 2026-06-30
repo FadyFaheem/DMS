@@ -16,18 +16,27 @@ import type { Dinosaur, Habitat } from '../api/players';
 import { feedDino, moveDino, treatDino, quarantineDino } from '../api/dinosaurs';
 import { statusColor } from '../utils/status';
 import { formatDateTime } from '../utils/dateFormat';
+import DinoPortrait from './DinoPortrait';
 
 const DIETS = ['plants', 'meat', 'fish', 'insects'];
 
 interface Props {
   dino: Dinosaur | null;
   habitats: Habitat[];
+  dinos?: Dinosaur[];
   vetLabBuilt: boolean;
   onClose: () => void;
   onChanged: () => Promise<void> | void;
 }
 
-export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, onChanged }: Props) {
+export default function DinoInspector({
+  dino,
+  habitats,
+  dinos = [],
+  vetLabBuilt,
+  onClose,
+  onChanged,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [moveTo, setMoveTo] = useState<number | ''>('');
@@ -50,10 +59,21 @@ export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, on
       <Box sx={{ width: { xs: '100vw', sm: 380 }, p: 3 }}>
         {dino && (
           <>
-            <Typography variant="h5">{dino.name}</Typography>
-            <Typography color="text.secondary" gutterBottom>
-              {dino.species} · {dino.period}
-            </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 0.5 }}>
+              <DinoPortrait
+                species={dino.species}
+                color={dino.color}
+                id={dino.id}
+                size={56}
+                alive={dino.alive}
+              />
+              <Box>
+                <Typography variant="h5">{dino.name}</Typography>
+                <Typography color="text.secondary">
+                  {dino.species} · {dino.period}
+                </Typography>
+              </Box>
+            </Stack>
             <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap" useFlexGap>
               <Chip size="small" label={dino.status} color={statusColor(dino.status)} />
               <Chip size="small" label={dino.gender} />
@@ -76,6 +96,12 @@ export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, on
             <StatRow label="Hunger" value={dino.hunger} invert />
             <StatRow label="Happiness" value={dino.happiness} />
             <StatRow label="Breeding readiness" value={dino.reproduction_readiness} />
+            {dino.genetics_quality != null && (
+              <StatRow
+                label={`Genetics (IV ${dino.genetics_quality})`}
+                value={dino.genetics_quality}
+              />
+            )}
 
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2">
@@ -85,12 +111,26 @@ export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, on
             <Typography variant="body2">
               Prefers: {dino.preferred_terrain} · {dino.social_structure}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Lineage:{' '}
-              {dino.parent_a_id && dino.parent_b_id
-                ? `#${dino.parent_a_id} × #${dino.parent_b_id}`
-                : 'wild-caught'}
+            {dino.temperature_min != null && dino.temperature_max != null && (
+              <Typography variant="body2">
+                Comfortable: {dino.temperature_min}–{dino.temperature_max}°C
+              </Typography>
+            )}
+            {(dino.diet_restrictions ?? []).length > 0 && (
+              <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap" useFlexGap>
+                <Typography variant="body2" color="text.secondary">
+                  Allergies:
+                </Typography>
+                {(dino.diet_restrictions ?? []).map((d) => (
+                  <Chip key={d} size="small" color="warning" variant="outlined" label={d} />
+                ))}
+              </Stack>
+            )}
+
+            <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+              Lineage
             </Typography>
+            <LineageTree dino={dino} byId={new Map(dinos.map((d) => [d.id, d]))} />
 
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" gutterBottom>
@@ -190,6 +230,62 @@ export default function DinoInspector({ dino, habitats, vetLabBuilt, onClose, on
         )}
       </Box>
     </Drawer>
+  );
+}
+
+// Renders a dino's ancestry up to a couple of generations using the park's dino
+// list to resolve parent ids. Falls back to "wild-caught" when parentage is
+// unknown (a starter or an acquired specimen).
+function LineageTree({
+  dino,
+  byId,
+  depth = 0,
+}: {
+  dino: Dinosaur;
+  byId: Map<number, Dinosaur>;
+  depth?: number;
+}) {
+  const parentA = dino.parent_a_id != null ? byId.get(dino.parent_a_id) : undefined;
+  const parentB = dino.parent_b_id != null ? byId.get(dino.parent_b_id) : undefined;
+  const hasParents = dino.parent_a_id != null || dino.parent_b_id != null;
+
+  return (
+    <Box
+      sx={{ pl: depth === 0 ? 0 : 1.5, borderLeft: depth === 0 ? 0 : 1, borderColor: 'divider' }}
+    >
+      <Typography variant="body2">
+        {depth === 0 ? '' : '↳ '}
+        {dino.name}
+        <Typography component="span" variant="caption" color="text.secondary">
+          {' '}
+          · {dino.species}
+          {dino.genetics_quality != null ? ` · IV ${dino.genetics_quality}` : ''}
+        </Typography>
+      </Typography>
+      {!hasParents && depth === 0 && (
+        <Typography variant="caption" color="text.secondary">
+          Wild-caught (no recorded parents)
+        </Typography>
+      )}
+      {depth < 2 && hasParents && (
+        <Box sx={{ mt: 0.5 }}>
+          {[parentA, parentB].map((parent, index) =>
+            parent ? (
+              <LineageTree key={parent.id} dino={parent} byId={byId} depth={depth + 1} />
+            ) : (
+              <Typography
+                key={index}
+                variant="body2"
+                color="text.secondary"
+                sx={{ pl: 1.5, borderLeft: 1, borderColor: 'divider' }}
+              >
+                ↳ unknown parent
+              </Typography>
+            ),
+          )}
+        </Box>
+      )}
+    </Box>
   );
 }
 

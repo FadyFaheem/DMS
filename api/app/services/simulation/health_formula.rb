@@ -8,14 +8,26 @@ module Simulation
 
     module_function
 
-    def daily_health_delta(age_months:, diet_quality:, matches_terrain:, overcrowded:, structure:, with_group:, disease_delta: 0.0)
+    def daily_health_delta(age_months:, diet_quality:, matches_terrain:, overcrowded:, structure:, with_group:, disease_delta: 0.0, temperature_delta: 0.0)
       DIET_DELTA.fetch(diet_quality, 0.0) +
         terrain_delta(matches_terrain) +
         crowding_delta(overcrowded) +
         social_delta(structure, with_group) +
         age_delta(age_months) +
-        disease_delta -
+        disease_delta +
+        temperature_delta -
         BASE_DECAY
+    end
+
+    # Health effect of a habitat's temperature against a dino's comfortable band:
+    # a small bonus inside the range, and a penalty that grows with how far the
+    # reading sits outside it. Returns 0 when either side is unknown.
+    def temperature_delta(temperature:, min:, max:)
+      return 0.0 if temperature.nil? || min.nil? || max.nil?
+      return 0.5 if temperature.between?(min, max)
+
+      distance = temperature < min ? min - temperature : temperature - max
+      -(distance * 0.2)
     end
 
     def happiness(happiness_modifier:, matches_terrain:, overcrowded:, structure:, with_group:)

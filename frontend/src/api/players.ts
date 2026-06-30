@@ -8,6 +8,11 @@ export interface Habitat {
   level: number;
   happiness_modifier: number;
   living_count: number;
+  temperature?: number | null;
+  humidity?: number | null;
+  food_stockpile?: number;
+  feature?: string | null;
+  feature_label?: string | null;
 }
 
 export interface HealthHistoryEntry {
@@ -37,6 +42,10 @@ export interface Dinosaur {
   status: string;
   alive: boolean;
   mutations: string[];
+  genetics_quality?: number;
+  temperature_min?: number | null;
+  temperature_max?: number | null;
+  diet_restrictions?: string[];
   parent_a_id: number | null;
   parent_b_id: number | null;
   born_at: string;
@@ -164,6 +173,31 @@ export interface StructuresState {
   catalog: StructureCatalogEntry[];
 }
 
+export interface Goal {
+  key: string;
+  name: string;
+  description: string;
+  metric: string;
+  threshold: number;
+  reward: number;
+  win: boolean;
+  current: number;
+  completed: boolean;
+}
+
+export interface GoalsState {
+  completed: number;
+  total: number;
+  catalog: Goal[];
+}
+
+export interface PrestigeState {
+  level: number;
+  multiplier: number;
+  won: boolean;
+  can_prestige: boolean;
+}
+
 export interface ParkEvent {
   id: number;
   kind: string;
@@ -199,7 +233,11 @@ export interface Player {
   structures: StructuresState;
   attractions: AttractionsState;
   active_effects: ActiveEffect[];
+  goals?: GoalsState;
+  prestige?: PrestigeState;
   events: ParkEvent[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function createPlayer(): Promise<Player> {

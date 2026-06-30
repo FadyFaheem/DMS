@@ -8,6 +8,10 @@ module Simulation
     # ponytail: cap idle catch-up (~10 game-years); add a scheduled job if a
     # game ever needs to simulate longer absences precisely.
     MAX_CATCHUP_DAYS = 3650
+    # Happiness a heat-tolerant dino gains from a volcanic habitat's warmth.
+    HEAT_HAPPINESS = 8.0
+    # Happiness a herbivore loses sharing open grassland with a carnivore.
+    PREDATION_HAPPINESS = -6.0
 
     def self.call(dino, now: Time.current)
       new(dino, now:).call
@@ -42,13 +46,14 @@ module Simulation
     def advance_day(env)
       # Hunger is governed by Simulation::Consumption; DinoTick only reads it.
       base_happiness = HealthFormula.happiness(happiness_modifier: env[:happiness_modifier], **env[:conditions])
-      @dino.happiness = clamp(base_happiness * env[:happiness_multiplier])
+      @dino.happiness = clamp(base_happiness * env[:happiness_multiplier] + env[:terrain_happiness])
       @dino.reproduction_readiness = readiness_after
       maybe_contract_disease(env)
       delta = HealthFormula.daily_health_delta(
         age_months: @dino.age_months(@now),
         diet_quality: effective_diet_quality,
         disease_delta: disease_delta,
+        temperature_delta: temperature_delta(env),
         **env[:conditions]
       )
       @dino.health = clamp(@dino.health + delta)
@@ -63,6 +68,8 @@ module Simulation
         happiness_multiplier: habitat ? habitat_effect_multiplier(habitat) : 1.0,
         terrain: habitat&.terrain,
         crowded: habitat&.crowded? || false,
+        temperature: habitat&.effective_temperature,
+        terrain_happiness: habitat ? terrain_happiness(habitat) : 0.0,
         conditions: {
           matches_terrain: habitat.present? && @dino.preferred_terrain == habitat.terrain,
           overcrowded: habitat&.overcrowded? || false,
@@ -70,6 +77,36 @@ module Simulation
           with_group: living > 1
         }
       }
+    end
+
+    def temperature_delta(env)
+      HealthFormula.temperature_delta(
+        temperature: env[:temperature], min: @dino.temperature_min, max: @dino.temperature_max
+      )
+    end
+
+    # Terrain "special features" that nudge happiness: volcanic warmth pleases
+    # heat-tolerant dinos, while open grassland unsettles herbivores that share
+    # it with a carnivore.
+    def terrain_happiness(habitat)
+      case habitat.terrain_feature
+      when :heat then heat_tolerant?(habitat) ? HEAT_HAPPINESS : 0.0
+      when :predation then predation_happiness(habitat)
+      else 0.0
+      end
+    end
+
+    def heat_tolerant?(habitat)
+      temp = habitat.effective_temperature
+      @dino.temperature_max.present? && temp.present? && @dino.temperature_max >= temp
+    end
+
+    def predation_happiness(habitat)
+      return 0.0 unless @dino.legacy_category == "herbivore"
+
+      # ponytail: one query per grassland herbivore; fine for small parks.
+      carnivore = habitat.dinosaurs.alive.where(diet_primary: "meat").where.not(id: @dino.id).exists?
+      carnivore ? PREDATION_HAPPINESS : 0.0
     end
 
     # Product of any active habitat-scoped event multipliers (e.g. a heat spike

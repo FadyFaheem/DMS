@@ -135,6 +135,29 @@ export default function HabitatsPage() {
                       ))}
                     </Stack>
                   )}
+                  <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                    {habitat.temperature != null && (
+                      <Chip size="small" variant="outlined" label={`${habitat.temperature}°C`} />
+                    )}
+                    {habitat.humidity != null && (
+                      <Chip size="small" variant="outlined" label={`${habitat.humidity}% RH`} />
+                    )}
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={`Forage ${habitat.food_stockpile ?? 0}`}
+                    />
+                  </Stack>
+                  {habitat.feature_label && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {habitat.feature_label}
+                    </Typography>
+                  )}
                   <Box sx={{ mt: 1 }}>
                     {residents.map((d) => (
                       <Chip key={d.id} size="small" label={d.name} sx={{ mr: 0.5, mb: 0.5 }} />
