@@ -49,7 +49,7 @@ spec:
       command: ["/bin/sh"]
       # Install libpq, bundle gems, then boot Rails. Add `rails db:prepare &&`
       # before the server once you introduce migrations.
-      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server -b 0.0.0.0 -p 5020"]
+      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server -b 0.0.0.0 -p 18080"]
       env:
         - name: DB_HOST
           value: localhost
@@ -67,14 +67,14 @@ spec:
         - name: RAILS_ENV
           value: production
         - name: PORT
-          value: "5020"
+          value: "18080"
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
               name: dpm-prod-secrets
               key: secret-key-base
       # Note: ports section removed - with hostNetwork: true, containers use host network directly.
-      # Rails API will be accessible on port 5020 on the host.
+      # Rails API will be accessible on port 18080 on the host.
       volumeMounts:
         # Read-write: Rails writes to tmp/ and log/.
         - name: api-code
