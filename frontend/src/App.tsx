@@ -1,64 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CircularProgress, CssBaseline, ThemeProvider, Typography } from '@mui/material';
-import { PlayerProvider, useGame } from './context/PlayerContext';
-import AppLayout from './components/AppLayout';
-import ParkDashboardPage from './pages/ParkDashboardPage';
-import HabitatsPage from './pages/HabitatsPage';
-import SpeciesPage from './pages/SpeciesPage';
-import ResearchPage from './pages/ResearchPage';
-import ProductionPage from './pages/ProductionPage';
-import GoalsPage from './pages/GoalsPage';
-import ProfilePage from './pages/ProfilePage';
-import { appTheme } from './theme/theme';
+import { PlayerProvider } from './context/PlayerContext';
+import { ScreenProvider } from './webgl/ScreenContext';
+import GameCanvas from './webgl/GameCanvas';
 
-function GameRoutes() {
-  const { loading, player, error } = useGame();
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'grid', placeItems: 'center', height: '100dvh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (!player) {
-    return (
-      <Box
-        sx={{ display: 'grid', placeItems: 'center', height: '100dvh', p: 3, textAlign: 'center' }}
-      >
-        <Typography color="error">{error ?? 'Unable to load your park.'}</Typography>
-      </Box>
-    );
-  }
-
+// The whole game now renders inside a single WebGL canvas. PlayerProvider and
+// ScreenProvider hold game/identity and navigation state outside the canvas; the
+// values are bridged inside (see GameCanvas / WebglState).
+export default function App() {
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<ParkDashboardPage />} />
-        <Route path="habitats" element={<HabitatsPage />} />
-        <Route path="species" element={<SpeciesPage />} />
-        <Route path="research" element={<ResearchPage />} />
-        <Route path="production" element={<ProductionPage />} />
-        <Route path="goals" element={<GoalsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <PlayerProvider>
+      <ScreenProvider>
+        <GameCanvas />
+      </ScreenProvider>
+    </PlayerProvider>
   );
 }
-
-function App() {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <PlayerProvider>
-          <GameRoutes />
-        </PlayerProvider>
-      </BrowserRouter>
-    </ThemeProvider>
-  );
-}
-
-export default App;

@@ -240,8 +240,12 @@ export interface Player {
   updated_at?: string;
 }
 
-export function createPlayer(): Promise<Player> {
-  return apiJson<Player>('/api/players', { method: 'POST' });
+export function createPlayer(displayName?: string): Promise<Player> {
+  const trimmed = displayName?.trim();
+  return apiJson<Player>('/api/players', {
+    method: 'POST',
+    body: JSON.stringify(trimmed ? { display_name: trimmed } : {}),
+  });
 }
 
 export function getMe(): Promise<Player> {
