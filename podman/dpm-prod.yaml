@@ -47,11 +47,11 @@ spec:
     - name: rails-api
       image: docker.io/ruby:3.3
       command: ["/bin/sh"]
-      # Install libpq, bundle gems, then boot Rails. Puma binds 0.0.0.0:$PORT via
-      # config/puma.rb, so do NOT also pass -b/-p here -- specifying the port twice
-      # makes Puma bind the same socket twice ("Address already in use").
-      # Add `rails db:prepare &&` before the server once you introduce migrations.
-      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && exec bundle exec rails server"]
+      # Install libpq, bundle gems, run migrations, then boot Rails. Puma binds
+      # 0.0.0.0:$PORT via config/puma.rb, so do NOT also pass -b/-p here -- specifying
+      # the port twice makes Puma bind the same socket twice ("Address already in
+      # use"). db:prepare creates the schema / runs pending migrations on boot.
+      args: ["-c", "cd /app && apt-get update && apt-get install -y --no-install-recommends libpq-dev && bundle install && bundle exec rails db:prepare && exec bundle exec rails server"]
       env:
         - name: DB_HOST
           value: localhost
