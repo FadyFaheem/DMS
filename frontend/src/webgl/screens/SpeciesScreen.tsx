@@ -101,7 +101,7 @@ function SpeciesCard({
         </Text>
       </Container>
       <Text fontSize={11} color={BRAND_COLORS.mediumGray}>
-        {entry.period} · {entry.diet_primary} · {entry.preferred_terrain} · {entry.rarity}
+        {entry.period} | {entry.diet_primary} | {entry.preferred_terrain} | {entry.rarity}
       </Text>
       <Text fontSize={11} color={BRAND_COLORS.mediumGray}>
         {entry.owned_count > 0 ? `You own ${entry.owned_count}` : 'None in your park'}

@@ -172,7 +172,7 @@ function DinoPanel({
     >
       <Container flexDirection="row" justifyContent="space-between" alignItems="center">
         <Text fontSize={16} fontWeight="bold">
-          {dino.name} · {dino.species}
+          {dino.name} | {dino.species}
         </Text>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <Text>Close</Text>
@@ -281,7 +281,7 @@ function HabitatPanel({
         </Button>
       </Container>
       <Text fontSize={12} color={BRAND_COLORS.mediumGray}>
-        {habitat.terrain} · {residents.length}/{habitat.capacity} dinos · forage{' '}
+        {habitat.terrain} | {residents.length}/{habitat.capacity} dinos | forage{' '}
         {habitat.food_stockpile ?? 0}
       </Text>
       <Button variant="default" size="sm" disabled={busy} onClick={stock}>

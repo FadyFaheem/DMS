@@ -113,7 +113,7 @@ function HabitatCard({
         </Text>
       </Container>
       <Text fontSize={12} color={BRAND_COLORS.mediumGray}>
-        {habitat.terrain} · {habitat.living_count}/{habitat.capacity}
+        {habitat.terrain} | {habitat.living_count}/{habitat.capacity}
       </Text>
       <Progress value={fill} width="100%" />
       <Container flexDirection="row" gap={6} flexWrap="wrap">

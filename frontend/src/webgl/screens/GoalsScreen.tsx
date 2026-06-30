@@ -56,7 +56,7 @@ export default function GoalsScreen() {
             Prestige level {prestigeState.level}
           </Text>
           <Text fontSize={12} color={BRAND_COLORS.mediumGray}>
-            Income x{prestigeState.multiplier.toFixed(2)} · {goals.completed}/{goals.total}{' '}
+            Income x{prestigeState.multiplier.toFixed(2)} | {goals.completed}/{goals.total}{' '}
             achievements
           </Text>
         </Container>
