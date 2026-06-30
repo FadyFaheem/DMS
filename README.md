@@ -42,7 +42,7 @@ Authenticated routes take the park code as a bearer token: `Authorization: Beare
 # 1. Create + load the dev secrets, then start the development pod
 cp podman/secrets.dev.example.yaml podman/secrets.dev.yaml   # then edit values
 podman play kube podman/secrets.dev.yaml
-podman play kube podman/project-dev.yaml
+podman play kube podman/dpm-dev.yaml
 
 # 2. Add the cmds alias and use the developer commands
 alias cmds='bash tools/cli/cmds.sh'

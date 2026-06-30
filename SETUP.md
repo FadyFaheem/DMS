@@ -16,10 +16,10 @@ Or just copy the folder.
 
 Replace `project` with your project name in:
 
-- `podman/project-dev.yaml` → `myproject-dev-pod`, `myproject-dev-db`, etc.
-- `podman/project-prod.yaml` → `myproject-prod-pod`, `myproject-prod-db`, etc.
+- `podman/dpm-dev.yaml` → `myproject-dev-pod`, `myproject-dev-db`, etc.
+- `podman/dpm-prod.yaml` → `myproject-prod-pod`, `myproject-prod-db`, etc.
 - `podman/secrets.*.example.yaml` → the secret `metadata.name` (`myproject-dev-secrets`)
-- `tools/cli/commands/*.fzf` → references to `project-dev-pod`, `project-dev-db`
+- `tools/cli/commands/*.fzf` → references to `dpm-dev-pod`, `dpm-dev-db`
 - `api/app/controllers/health_controller.rb` → the `service` field in `/health`
 - `frontend/src/components/AppLayout.tsx` → `APP_NAME` constant
 - `frontend/index.html` → `<title>`
@@ -29,7 +29,7 @@ Replace `project` with your project name in:
 Both pod YAMLs use `PROJECT_NAME` placeholders in `hostPath` volumes. Replace
 with the absolute path to your project:
 
-**`podman/project-dev.yaml`** — 3 occurrences (api, frontend, cloudflared):
+**`podman/dpm-dev.yaml`** — 3 occurrences (api, frontend, cloudflared):
 
 ```yaml
 # Windows WSL
@@ -40,7 +40,7 @@ path: /home/you/MyProject/api
 path: /Users/you/MyProject/api
 ```
 
-**`podman/project-prod.yaml`** — 3 occurrences (production host paths).
+**`podman/dpm-prod.yaml`** — 3 occurrences (production host paths).
 
 ## Step 4: Create and load secrets
 
@@ -108,14 +108,14 @@ cmds pods      # pick "Pre-pull required images"
 cmds secrets   # pick "Load dev secrets into podman"
 
 # Start the pod
-cmds pods      # pick "Start project-dev pod"
+cmds pods      # pick "Start dpm-dev pod"
 ```
 
 Or directly:
 
 ```bash
 podman play kube podman/secrets.dev.yaml
-podman play kube podman/project-dev.yaml
+podman play kube podman/dpm-dev.yaml
 ```
 
 Open <http://localhost:3000> in your browser. The app loads straight to the
@@ -134,8 +134,8 @@ dashboard (there is no login).
 ### Pod won't start
 - Check Podman is installed: `podman --version`
 - Ensure secrets are loaded: `podman secret ls` (the pod references them via `secretKeyRef`)
-- Verify all host paths in `project-dev.yaml` exist
-- Check logs: `podman logs project-dev-pod-postgres-db`
+- Verify all host paths in `dpm-dev.yaml` exist
+- Check logs: `podman logs dpm-dev-pod-postgres-db`
 - TLS issues pulling images: `cmds pods` → "Fix TLS certificate issues"
 
 ### "cmds: command not found"
@@ -145,13 +145,13 @@ dashboard (there is no login).
 
 ### Database connection issues
 - Verify container is running: `podman ps`
-- Check status: `podman exec -it project-dev-pod-postgres-db pg_isready -U postgres`
+- Check status: `podman exec -it dpm-dev-pod-postgres-db pg_isready -U postgres`
 - Reset the DB volume: `cmds pods` → "Rebuild dev pod with database reset"
 
 ### Frontend errors about missing `node_modules`
 - The `react-frontend` container runs `npm install` on every start
-- Check its logs: `podman logs project-dev-pod-react-frontend`
+- Check its logs: `podman logs dpm-dev-pod-react-frontend`
 
 ### Rails API container keeps restarting
-- It runs `bundle install` on each start; check logs: `podman logs project-dev-pod-rails-api`
-- Ensure the `project-dev-secrets` podman secret is loaded (it provides `SECRET_KEY_BASE`)
+- It runs `bundle install` on each start; check logs: `podman logs dpm-dev-pod-rails-api`
+- Ensure the `dpm-dev-secrets` podman secret is loaded (it provides `SECRET_KEY_BASE`)

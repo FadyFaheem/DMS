@@ -1,23 +1,23 @@
 #View Rails API logs
-podman logs project-dev-pod-rails-api
+podman logs dpm-dev-pod-rails-api
 
 #Follow Rails API logs in real-time
-podman logs -f project-dev-pod-rails-api
+podman logs -f dpm-dev-pod-rails-api
 
 #Test Rails API health endpoint
 curl http://localhost:5000/health
 
 #Restart Rails API container only
-podman restart project-dev-pod-rails-api
+podman restart dpm-dev-pod-rails-api
 
 #View Rails API container resource usage
-podman stats project-dev-pod-rails-api --no-stream
+podman stats dpm-dev-pod-rails-api --no-stream
 
 #Check Rails API container details
-podman inspect project-dev-pod-rails-api
+podman inspect dpm-dev-pod-rails-api
 
 #Open a Rails console inside the API container
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails console
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails console
 
 #Open a shell inside the API container
-podman exec -it project-dev-pod-rails-api bash
+podman exec -it dpm-dev-pod-rails-api bash

@@ -1,41 +1,41 @@
 #Access PostgreSQL database (dev)
-podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db
+podman exec -it dpm-dev-pod-postgres-db psql -U postgres -d dpm-dev-db
 
 #Check Rails migration version
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:version
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails db:version
 
 #Run pending Rails migrations
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:migrate
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails db:migrate
 
 #Prepare the database (create + migrate + seed if new)
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:prepare
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails db:prepare
 
 #Seed the database
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails db:seed
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails db:seed
 
 #Open the Rails database console
-podman exec -w /app -it project-dev-pod-rails-api bundle exec rails dbconsole
+podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails dbconsole
 
 #Generate a new Rails migration
-read -p "Enter migration name (e.g., create_widgets): " name && podman exec -w /app -it project-dev-pod-rails-api bundle exec rails generate migration "$name"
+read -p "Enter migration name (e.g., create_widgets): " name && podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails generate migration "$name"
 
 #Check database tables
-podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "\dt"
+podman exec -it dpm-dev-pod-postgres-db psql -U postgres -d dpm-dev-db -c "\dt"
 
 #Check database size
-podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db -c "SELECT pg_size_pretty(pg_database_size('project-dev-db'));"
+podman exec -it dpm-dev-pod-postgres-db psql -U postgres -d dpm-dev-db -c "SELECT pg_size_pretty(pg_database_size('dpm-dev-db'));"
 
 #List all databases
-podman exec -it project-dev-pod-postgres-db psql -U postgres -c "\l"
+podman exec -it dpm-dev-pod-postgres-db psql -U postgres -c "\l"
 
 #View database container logs
-podman logs project-dev-pod-postgres-db
+podman logs dpm-dev-pod-postgres-db
 
 #Test database connection
-podman exec -it project-dev-pod-postgres-db pg_isready -U postgres
+podman exec -it dpm-dev-pod-postgres-db pg_isready -U postgres
 
 #Backup database
-podman exec -it project-dev-pod-postgres-db pg_dump -U postgres -d project-dev-db > backup.sql
+podman exec -it dpm-dev-pod-postgres-db pg_dump -U postgres -d dpm-dev-db > backup.sql
 
 #Restore database from backup
-read -p "Enter backup filename: " backupfile && podman exec -i project-dev-pod-postgres-db psql -U postgres -d project-dev-db < $backupfile
+read -p "Enter backup filename: " backupfile && podman exec -i dpm-dev-pod-postgres-db psql -U postgres -d dpm-dev-db < $backupfile

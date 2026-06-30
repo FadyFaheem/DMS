@@ -9,16 +9,16 @@ Pod definitions for the development and production environments.
 podman play kube podman/secrets.dev.yaml
 
 # Start the dev pod
-podman play kube podman/project-dev.yaml
+podman play kube podman/dpm-dev.yaml
 
 # Stop
-podman pod stop project-dev-pod
+podman pod stop dpm-dev-pod
 
 # Delete (containers + pod, keep DB volume)
-podman pod rm -f project-dev-pod
+podman pod rm -f dpm-dev-pod
 
 # Delete pod and wipe database (full reset)
-podman pod rm -f project-dev-pod && podman volume rm project-dev-db-data-claim
+podman pod rm -f dpm-dev-pod && podman volume rm dpm-dev-db-data-claim
 ```
 
 ## Containers in each pod
@@ -39,7 +39,7 @@ gems on each start (`bundle install`), mirroring the previous pip-on-start flow.
 Secret values (`POSTGRES_PASSWORD`, `DB_PASSWORD`, `SECRET_KEY_BASE`) are **not**
 in the pod YAMLs — they are pulled from podman secrets via `secretKeyRef`:
 
-- `project-dev-secrets` / `project-prod-secrets`, each with keys `db-password` and `secret-key-base`.
+- `dpm-dev-secrets` / `dpm-prod-secrets`, each with keys `db-password` and `secret-key-base`.
 - Defined in `podman/secrets.{dev,prod}.yaml` (gitignored; copy from `*.example.yaml`).
 - Load them before starting a pod: `podman play kube podman/secrets.dev.yaml` (or `cmds secrets`).
 - podman secrets are immutable: to rotate, `podman secret rm <name>`, re-load, then restart the pod.
@@ -51,8 +51,8 @@ in the pod YAMLs — they are pulled from podman secrets via `secretKeyRef`:
 ### Database (dev)
 - **Host:** localhost (`5432`)
 - **User:** `postgres`
-- **Password:** `postgres` (from the `project-dev-secrets` secret)
-- **Database:** `project-dev-db`
+- **Password:** `postgres` (from the `dpm-dev-secrets` secret)
+- **Database:** `dpm-dev-db`
 
 ## Required Configuration Before First Run
 

@@ -23,34 +23,34 @@ cloudflared tunnel route dns dms-dev dms-dev.faheemlabs.com
 cloudflared tunnel route dns dms-prod dms.faheemlabs.com
 
 #View cloudflared logs (dev)
-podman logs project-dev-pod-cloudflared
+podman logs dpm-dev-pod-cloudflared
 
 #Follow cloudflared logs in real-time (dev)
-podman logs -f project-dev-pod-cloudflared
+podman logs -f dpm-dev-pod-cloudflared
 
 #View cloudflared logs (prod)
-podman logs project-prod-pod-cloudflared
+podman logs dpm-prod-pod-cloudflared
 
 #Follow cloudflared logs in real-time (prod)
-podman logs -f project-prod-pod-cloudflared
+podman logs -f dpm-prod-pod-cloudflared
 
 #Restart cloudflared container (dev)
-podman restart project-dev-pod-cloudflared
+podman restart dpm-dev-pod-cloudflared
 
 #Restart cloudflared container (prod)
-podman restart project-prod-pod-cloudflared
+podman restart dpm-prod-pod-cloudflared
 
 #Access cloudflared container shell (dev)
-podman exec -it project-dev-pod-cloudflared sh
+podman exec -it dpm-dev-pod-cloudflared sh
 
 #Access cloudflared container shell (prod)
-podman exec -it project-prod-pod-cloudflared sh
+podman exec -it dpm-prod-pod-cloudflared sh
 
 #Check cloudflared container resource usage (dev)
-podman stats project-dev-pod-cloudflared --no-stream
+podman stats dpm-dev-pod-cloudflared --no-stream
 
 #Check cloudflared container resource usage (prod)
-podman stats project-prod-pod-cloudflared --no-stream
+podman stats dpm-prod-pod-cloudflared --no-stream
 
 #Delete dev tunnel (dms-dev)
 cloudflared tunnel delete dms-dev
