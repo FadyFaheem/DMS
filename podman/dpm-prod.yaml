@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: project-prod-pod
+  name: dpm-prod-pod
 spec:
   # Use host network mode to ensure containers bind to 0.0.0.0 and are accessible externally.
   # This fixes issues where Podman containers only bind to 127.0.0.1.
@@ -30,10 +30,10 @@ spec:
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: project-prod-secrets
+              name: dpm-prod-secrets
               key: db-password
         - name: POSTGRES_DB
-          value: project-prod-db
+          value: dpm-prod-db
       # Note: ports section removed - with hostNetwork: true, containers use host network directly.
       # PostgreSQL will be accessible on port 5432 on the host.
       volumeMounts:
@@ -53,13 +53,13 @@ spec:
         - name: DB_PORT
           value: "5432"
         - name: DB_NAME
-          value: project-prod-db
+          value: dpm-prod-db
         - name: DB_USER
           value: postgres
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: project-prod-secrets
+              name: dpm-prod-secrets
               key: db-password
         - name: RAILS_ENV
           value: production
@@ -68,7 +68,7 @@ spec:
         - name: SECRET_KEY_BASE
           valueFrom:
             secretKeyRef:
-              name: project-prod-secrets
+              name: dpm-prod-secrets
               key: secret-key-base
       # Note: ports section removed - with hostNetwork: true, containers use host network directly.
       # Rails API will be accessible on port 5000 on the host.
@@ -116,7 +116,7 @@ spec:
   volumes:
     - name: pgdata
       persistentVolumeClaim:
-        claimName: project-prod-db-data-claim
+        claimName: dpm-prod-db-data-claim
     - name: api-code
       hostPath:
         # TODO: Update this path to match your project location on the prod host.
@@ -139,7 +139,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: project-prod-db-data-claim
+  name: dpm-prod-db-data-claim
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:

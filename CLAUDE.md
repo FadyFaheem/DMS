@@ -68,8 +68,8 @@ Identity is a low-security **portable player code** (a bearer token, no password
 │   ├── package.json
 │   └── vite.config.ts         dev proxy /api -> :5000, allowedHosts, polling
 ├── podman/
-│   ├── project-dev.yaml       Pod: postgres + rails + vite + cloudflared
-│   ├── project-prod.yaml      Pod: postgres + rails(puma) + built frontend + cloudflared
+│   ├── dpm-dev.yaml       Pod: postgres + rails + vite + cloudflared
+│   ├── dpm-prod.yaml      Pod: postgres + rails(puma) + built frontend + cloudflared
 │   ├── secrets.dev.example.yaml    secret template (copy to secrets.dev.yaml)
 │   └── secrets.prod.example.yaml
 ├── cloudflared/               Tunnel configs (creds gitignored)
@@ -114,12 +114,12 @@ Identity is a low-security **portable player code** (a bearer token, no password
 | Interactive command picker | `cmds` |
 | Scope picker | `cmds pods`, `cmds database`, `cmds api`, `cmds secrets`, `cmds cf`, `cmds test` |
 | Load dev secrets (before first start) | `podman play kube podman/secrets.dev.yaml` |
-| Start dev pod | `podman play kube podman/project-dev.yaml` |
-| Stop dev pod | `podman pod stop project-dev-pod` |
-| Reset DB | `podman pod rm -f project-dev-pod && podman volume rm project-dev-db-data-claim` |
-| API logs | `podman logs -f project-dev-pod-rails-api` |
-| Rails console (in container) | `podman exec -w /app -it project-dev-pod-rails-api bundle exec rails console` |
-| psql shell | `podman exec -it project-dev-pod-postgres-db psql -U postgres -d project-dev-db` |
+| Start dev pod | `podman play kube podman/dpm-dev.yaml` |
+| Stop dev pod | `podman pod stop dpm-dev-pod` |
+| Reset DB | `podman pod rm -f dpm-dev-pod && podman volume rm dpm-dev-db-data-claim` |
+| API logs | `podman logs -f dpm-dev-pod-rails-api` |
+| Rails console (in container) | `podman exec -w /app -it dpm-dev-pod-rails-api bundle exec rails console` |
+| psql shell | `podman exec -it dpm-dev-pod-postgres-db psql -U postgres -d dpm-dev-db` |
 | Run API specs | `cd api && bundle exec rspec` |
 | Run frontend tests | `cd frontend && npx vitest run` |
 | API dev (host-only) | `cd api && bundle install && rails s -p 5000` |
@@ -239,7 +239,7 @@ Add `api/spec/requests/api/widgets_spec.rb` (RSpec) and
 | `SECRET_KEY_BASE` | yes (prod) | dev value | Rails secret; a podman secret in containers |
 | `DB_HOST` | no | `localhost` | Postgres host |
 | `DB_PORT` | no | `5432` | Postgres port |
-| `DB_NAME` | no | `project-dev-db` | Database name |
+| `DB_NAME` | no | `dpm-dev-db` | Database name |
 | `DB_USER` | no | `postgres` | DB user |
 | `DB_PASSWORD` | no | `postgres` | DB password; a podman secret in containers |
 | `PORT` | no | `5000` | API listen port |
@@ -249,7 +249,7 @@ Add `api/spec/requests/api/widgets_spec.rb` (RSpec) and
 Secret values are stored as **podman secrets**, never committed:
 
 - Templates `podman/secrets.{dev,prod}.example.yaml`; real `secrets.{dev,prod}.yaml` are gitignored.
-- Each secret (`project-dev-secrets` / `project-prod-secrets`) has keys `db-password` and `secret-key-base`.
+- Each secret (`dpm-dev-secrets` / `dpm-prod-secrets`) has keys `db-password` and `secret-key-base`.
 - Pod YAMLs reference them via `env.valueFrom.secretKeyRef`.
 - Load before first pod start: `podman play kube podman/secrets.dev.yaml` (or `cmds secrets`).
 - podman secrets are immutable -- to rotate: `podman secret rm <name>`, re-load, restart the pod.
