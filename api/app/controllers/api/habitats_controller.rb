@@ -22,6 +22,27 @@ module Api
       render json: GameSerializer.habitat(habitat, 0), status: :created
     end
 
+    # POST /api/habitats/:id/upgrade
+    def upgrade
+      habitat = current_player.habitats.find_by(id: params[:id])
+      return render json: { error: "Habitat not found" }, status: :not_found unless habitat
+      unless current_player.researches.exists?(tech_key: "habitat_expansion")
+        return render json: { error: "Requires habitat_expansion" }, status: :unprocessable_entity
+      end
+
+      cost = Economy.habitat_upgrade_cost(habitat.level)
+      if current_player.currency < cost
+        return render json: { error: "Not enough currency" }, status: :unprocessable_entity
+      end
+
+      current_player.transaction do
+        current_player.update!(currency: current_player.currency - cost)
+        habitat.update!(level: habitat.level + 1, capacity: habitat.capacity + Economy::HABITAT_CAPACITY_STEP)
+      end
+
+      render json: GameSerializer.habitat(habitat, habitat.living_count)
+    end
+
     private
 
     def build_habitat(terrain, cost)

@@ -98,6 +98,7 @@ module GameSerializer
       name: habitat.name,
       terrain: habitat.terrain,
       capacity: habitat.capacity,
+      level: habitat.level,
       happiness_modifier: habitat.happiness_modifier,
       living_count: living_count
     }

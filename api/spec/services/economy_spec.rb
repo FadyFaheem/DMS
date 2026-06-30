@@ -27,4 +27,16 @@ RSpec.describe Economy do
       expect(described_class.habitat_cost("unknown")).to eq(Economy::DEFAULT_HABITAT_COST)
     end
   end
+
+  describe "upgrade costs" do
+    it "scales the food-production upgrade cost with the current level" do
+      expect(described_class.food_production_upgrade_cost(1)).to eq(Economy::FOOD_PRODUCTION_UPGRADE_BASE)
+      expect(described_class.food_production_upgrade_cost(3)).to eq(Economy::FOOD_PRODUCTION_UPGRADE_BASE * 3)
+    end
+
+    it "scales the habitat upgrade cost with the current level" do
+      expect(described_class.habitat_upgrade_cost(1)).to eq(Economy::HABITAT_UPGRADE_BASE)
+      expect(described_class.habitat_upgrade_cost(2)).to eq(Economy::HABITAT_UPGRADE_BASE * 2)
+    end
+  end
 end

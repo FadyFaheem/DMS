@@ -34,4 +34,31 @@ RSpec.describe "Api::Habitats", type: :request do
       expect(JSON.parse(response.body).size).to eq(1)
     end
   end
+
+  describe "POST /api/habitats/:id/upgrade" do
+    let(:habitat) { player.habitats.create!(name: "Forest", terrain: "forest", capacity: 6) }
+
+    it "raises level and capacity when habitat_expansion is unlocked" do
+      player.researches.create!(tech_key: "habitat_expansion")
+
+      post "/api/habitats/#{habitat.id}/upgrade", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(habitat.reload.level).to eq(2)
+      expect(habitat.capacity).to eq(6 + Economy::HABITAT_CAPACITY_STEP)
+      expect(player.reload.currency).to eq(10_000 - Economy.habitat_upgrade_cost(1))
+    end
+
+    it "refuses to upgrade without habitat_expansion" do
+      post "/api/habitats/#{habitat.id}/upgrade", headers: headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(habitat.reload.level).to eq(1)
+    end
+
+    it "requires a player code" do
+      post "/api/habitats/#{habitat.id}/upgrade"
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_30_010100) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_010200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,6 +78,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_010100) do
     t.integer "capacity", default: 6, null: false
     t.datetime "created_at", null: false
     t.integer "happiness_modifier", default: 0, null: false
+    t.integer "level", default: 1, null: false
     t.string "name", null: false
     t.bigint "player_id", null: false
     t.string "terrain", null: false

@@ -18,7 +18,9 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :habitats, only: [ :index, :create ]
+    resources :habitats, only: [ :index, :create ] do
+      post :upgrade, on: :member
+    end
 
     resources :researches, only: [ :index, :create ]
 
