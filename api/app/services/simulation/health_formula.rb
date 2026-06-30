@@ -8,12 +8,13 @@ module Simulation
 
     module_function
 
-    def daily_health_delta(age_months:, diet_quality:, matches_terrain:, overcrowded:, structure:, with_group:)
+    def daily_health_delta(age_months:, diet_quality:, matches_terrain:, overcrowded:, structure:, with_group:, disease_delta: 0.0)
       DIET_DELTA.fetch(diet_quality, 0.0) +
         terrain_delta(matches_terrain) +
         crowding_delta(overcrowded) +
         social_delta(structure, with_group) +
-        age_delta(age_months) -
+        age_delta(age_months) +
+        disease_delta -
         BASE_DECAY
     end
 

@@ -33,6 +33,33 @@ RSpec.describe "Api::Dinosaurs", type: :request do
     expect(dino.reload.habitat_id).to eq(grassland.id)
   end
 
+  describe "treatment" do
+    before { dino.diseases.create!(kind: "parasites", started_at: 1.hour.ago) }
+
+    it "treats active diseases when a vet lab is built" do
+      player.structures.create!(kind: "vet_lab")
+      player.update!(currency: 10_000)
+
+      post "/api/dinosaurs/#{dino.id}/treat", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(dino.diseases.active).to be_empty
+      expect(player.reload.currency).to eq(10_000 - Economy.treatment_cost(1))
+    end
+
+    it "refuses treatment without a vet lab" do
+      post "/api/dinosaurs/#{dino.id}/treat", headers: headers
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(dino.diseases.active).not_to be_empty
+    end
+  end
+
+  it "toggles quarantine" do
+    post "/api/dinosaurs/#{dino.id}/quarantine", headers: headers
+    expect(response).to have_http_status(:ok)
+    expect(dino.reload.quarantined).to be(true)
+  end
+
   it "requires a valid player code" do
     post "/api/dinosaurs/#{dino.id}/feed", params: { diet: "plants" }
     expect(response).to have_http_status(:unauthorized)

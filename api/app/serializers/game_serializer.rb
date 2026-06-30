@@ -4,7 +4,7 @@ module GameSerializer
   module_function
 
   def player(player)
-    dinos = player.dinosaurs.order(:id).to_a
+    dinos = player.dinosaurs.includes(:diseases).order(:id).to_a
     living = dinos.select(&:alive)
     living_by_habitat = living.group_by(&:habitat_id).transform_values(&:size)
 
@@ -19,6 +19,7 @@ module GameSerializer
       summary: summary(living),
       research: research(player),
       food_productions: food_productions(player),
+      structures: structures(player),
       events: events(player),
       created_at: iso(player.created_at),
       updated_at: iso(player.updated_at)
@@ -63,7 +64,8 @@ module GameSerializer
       population: living.size,
       by_category: DinoReport.call(rows)[:summary],
       avg_health: living.empty? ? 0.0 : (living.sum(&:health) / living.size).round(1),
-      critical: living.count { |d| d.health < 25 }
+      critical: living.count { |d| d.health < 25 },
+      sick: living.count { |d| d.diseases.any? { |x| x.cured_at.nil? } }
     }
   end
 
@@ -82,6 +84,28 @@ module GameSerializer
           build_cost: spec.build_cost,
           required_tech: spec.required_tech,
           unlocked: unlocked.include?(spec.required_tech)
+        }
+      end
+    }
+  end
+
+  # Buildable facilities (vet lab now; more in later milestones) with built and
+  # unlocked flags.
+  def structures(player)
+    unlocked = player.researches.pluck(:tech_key)
+    built = player.structures.pluck(:kind)
+    {
+      built: player.structures.order(:id).map do |s|
+        { id: s.id, kind: s.kind, name: StructureCatalog.find(s.kind)&.name, level: s.level }
+      end,
+      catalog: StructureCatalog.all.map do |spec|
+        {
+          kind: spec.kind,
+          name: spec.name,
+          cost: spec.cost,
+          required_tech: spec.required_tech,
+          unlocked: unlocked.include?(spec.required_tech),
+          built: built.include?(spec.kind)
         }
       end
     }
@@ -134,6 +158,9 @@ module GameSerializer
       status: dino.status,
       alive: dino.alive,
       mutations: dino.mutation_traits,
+      diseases: dino.diseases.select { |d| d.cured_at.nil? }.map(&:kind),
+      quarantined: dino.quarantined,
+      health_history: dino.health_history,
       parent_a_id: dino.parent_a_id,
       parent_b_id: dino.parent_b_id,
       born_at: iso(dino.born_at),

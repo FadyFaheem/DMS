@@ -30,5 +30,43 @@ module Api
       dino.update!(habitat:)
       render json: GameSerializer.dinosaur(dino.reload)
     end
+
+    # POST /api/dinosaurs/:id/treat -- cure active diseases (needs a vet lab)
+    def treat
+      dino = current_player.dinosaurs.find(params[:id])
+      unless current_player.structure?("vet_lab")
+        return render json: { error: "Build a veterinary lab first" }, status: :unprocessable_entity
+      end
+
+      active = dino.diseases.active.to_a
+      return render json: { error: "No active illness to treat" }, status: :unprocessable_entity if active.empty?
+
+      cost = Economy.treatment_cost(active.size)
+      return render json: { error: "Not enough currency" }, status: :unprocessable_entity if current_player.currency < cost
+
+      now = Time.current
+      current_player.transaction do
+        current_player.update!(currency: current_player.currency - cost)
+        active.each { |disease| disease.update!(cured_at: now) }
+        dino.update!(health_history: dino.health_history + [ treatment_record(active, now) ])
+        names = active.map { |d| DiseaseCatalog.find(d.kind).name }.join(", ")
+        Event.log(current_player, "cure", "#{dino.name} was treated for #{names}", now: now)
+      end
+
+      render json: GameSerializer.dinosaur(dino.reload)
+    end
+
+    # POST /api/dinosaurs/:id/quarantine -- toggle quarantine
+    def quarantine
+      dino = current_player.dinosaurs.find(params[:id])
+      dino.update!(quarantined: !dino.quarantined)
+      render json: GameSerializer.dinosaur(dino.reload)
+    end
+
+    private
+
+    def treatment_record(active, now)
+      { "at" => now.utc.iso8601, "action" => "treated", "diseases" => active.map(&:kind) }
+    end
   end
 end
