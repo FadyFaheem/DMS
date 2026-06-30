@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Hostnames allowed when running behind a Cloudflare Tunnel (Vite blocks unknown hosts).
-const ALLOWED_HOSTS: string[] = ['dms-dev.faheemlabs.com'];
+const ALLOWED_HOSTS: string[] = ['dms-dev.faheemlabs.com', 'dms.faheemlabs.com'];
 
 export default defineConfig({
   plugins: [react()],
