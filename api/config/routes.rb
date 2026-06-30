@@ -18,6 +18,8 @@ Rails.application.routes.draw do
       end
     end
 
+    resources :habitats, only: [ :index, :create ]
+
     resource :food, only: [ :create ], controller: "food"
 
     resources :breedings, only: [ :index, :create ] do
