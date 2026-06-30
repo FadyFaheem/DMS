@@ -119,12 +119,11 @@ spec:
         claimName: dpm-prod-db-data-claim
     - name: api-code
       hostPath:
-        # TODO: Update this path to match your project location on the prod host.
-        path: /home/ubuntu/PROJECT_NAME/api
+        path: /home/ubuntu/DPM/api
         type: Directory
     - name: frontend-code
       hostPath:
-        path: /home/ubuntu/PROJECT_NAME/frontend
+        path: /home/ubuntu/DPM/frontend
         type: Directory
     - name: host-resolv
       hostPath:
@@ -132,7 +131,7 @@ spec:
         type: File
     - name: cloudflared-config
       hostPath:
-        path: /home/ubuntu/PROJECT_NAME/cloudflared
+        path: /home/ubuntu/DPM/cloudflared
         type: Directory
 
 ---
