@@ -11,6 +11,7 @@ module Simulation
     MIN_RATION = 1
     SATIATION_PER_DAY = 20.0
     HUNGER_PER_DAY = 12.0
+    MALNUTRITION_DAYS = 3
     MAX_CATCHUP_DAYS = 3650
 
     def self.call(player, now: Time.current)
@@ -79,6 +80,18 @@ module Simulation
       dino.hunger = hunger.clamp(0.0, 100.0)
       dino.last_diet_quality = fed_last_day ? "preferred" : "wrong"
       dino.save! if dino.changed?
+      update_malnutrition(dino, unfed_days, fed_last_day)
+    end
+
+    # Prolonged starvation inflicts malnutrition; feeding the dino again clears it
+    # (other diseases require the veterinary lab).
+    def update_malnutrition(dino, unfed_days, fed_last_day)
+      active = dino.diseases.active.find_by(kind: "malnutrition")
+      if unfed_days >= MALNUTRITION_DAYS && active.nil?
+        dino.diseases.create!(kind: "malnutrition", started_at: @now)
+      elsif fed_last_day && active
+        active.update!(cured_at: @now)
+      end
     end
   end
 end

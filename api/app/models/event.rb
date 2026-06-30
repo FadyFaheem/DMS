@@ -2,7 +2,7 @@
 # Written by services and controllers via Event.log and surfaced on the player
 # payload as a recent feed.
 class Event < ApplicationRecord
-  KINDS = %w[birth death research build upgrade].freeze
+  KINDS = %w[birth death research build upgrade disease cure].freeze
 
   belongs_to :player
 

@@ -4,7 +4,7 @@ module GameSerializer
   module_function
 
   def player(player)
-    dinos = player.dinosaurs.order(:id).to_a
+    dinos = player.dinosaurs.includes(:diseases).order(:id).to_a
     living = dinos.select(&:alive)
     living_by_habitat = living.group_by(&:habitat_id).transform_values(&:size)
 
@@ -63,7 +63,8 @@ module GameSerializer
       population: living.size,
       by_category: DinoReport.call(rows)[:summary],
       avg_health: living.empty? ? 0.0 : (living.sum(&:health) / living.size).round(1),
-      critical: living.count { |d| d.health < 25 }
+      critical: living.count { |d| d.health < 25 },
+      sick: living.count { |d| d.diseases.any? { |x| x.cured_at.nil? } }
     }
   end
 
@@ -134,6 +135,8 @@ module GameSerializer
       status: dino.status,
       alive: dino.alive,
       mutations: dino.mutation_traits,
+      diseases: dino.diseases.select { |d| d.cured_at.nil? }.map(&:kind),
+      quarantined: dino.quarantined,
       parent_a_id: dino.parent_a_id,
       parent_b_id: dino.parent_b_id,
       born_at: iso(dino.born_at),

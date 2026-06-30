@@ -25,6 +25,7 @@ module Simulation
       return @dino if days <= 0
 
       env = environment
+      @active_diseases = @dino.diseases.active.to_a
       [ days, MAX_CATCHUP_DAYS ].min.times do
         break unless @dino.alive
 
@@ -42,9 +43,11 @@ module Simulation
       # Hunger is governed by Simulation::Consumption; DinoTick only reads it.
       @dino.happiness = clamp(HealthFormula.happiness(happiness_modifier: env[:happiness_modifier], **env[:conditions]))
       @dino.reproduction_readiness = readiness_after
+      maybe_contract_disease(env)
       delta = HealthFormula.daily_health_delta(
         age_months: @dino.age_months(@now),
         diet_quality: effective_diet_quality,
+        disease_delta: disease_delta,
         **env[:conditions]
       )
       @dino.health = clamp(@dino.health + delta)
@@ -56,6 +59,8 @@ module Simulation
       living = habitat ? habitat.living_count : 0
       {
         happiness_modifier: habitat&.happiness_modifier.to_i,
+        terrain: habitat&.terrain,
+        crowded: habitat&.crowded? || false,
         conditions: {
           matches_terrain: habitat.present? && @dino.preferred_terrain == habitat.terrain,
           overcrowded: habitat&.overcrowded? || false,
@@ -63,6 +68,28 @@ module Simulation
           with_group: living > 1
         }
       }
+    end
+
+    # Rule-based onset: crowding (>80% capacity) drives wetland scale rot,
+    # volcanic heat stress, and parasites in already-weak dinos. Quarantine
+    # exempts a dino. (Malnutrition is contracted by Simulation::Consumption.)
+    def maybe_contract_disease(env)
+      return if @dino.quarantined || !env[:crowded]
+
+      contract("scale_rot") if env[:terrain] == "wetland" && @dino.legacy_category == "herbivore"
+      contract("heat_stress") if env[:terrain] == "volcanic"
+      contract("parasites") if @dino.health < 30
+    end
+
+    def contract(kind)
+      return if @active_diseases.any? { |d| d.kind == kind }
+
+      @active_diseases << @dino.diseases.create!(kind: kind, started_at: @now)
+      Event.log(@dino.player, "disease", "#{@dino.name} contracted #{DiseaseCatalog.find(kind).name}", now: @now)
+    end
+
+    def disease_delta
+      @active_diseases.sum { |d| DiseaseCatalog.find(d.kind)&.daily_health || 0.0 }
     end
 
     def effective_diet_quality

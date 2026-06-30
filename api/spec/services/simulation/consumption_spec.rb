@@ -39,4 +39,23 @@ RSpec.describe Simulation::Consumption do
 
     expect { described_class.call(player, now: Time.current) }.not_to(change { d.reload.hunger })
   end
+
+  it "inflicts malnutrition after prolonged starvation" do
+    player.update!(food_plants: 0, last_consumed_at: 5.hours.ago)
+    d = dino(size_lbs: 2000)
+
+    described_class.call(player, now: Time.current)
+
+    expect(d.diseases.active.pluck(:kind)).to include("malnutrition")
+  end
+
+  it "clears malnutrition once the park can feed the dino again" do
+    d = dino(size_lbs: 2000)
+    d.diseases.create!(kind: "malnutrition", started_at: 1.hour.ago)
+    player.update!(food_plants: 1000, last_consumed_at: 2.hours.ago)
+
+    described_class.call(player, now: Time.current)
+
+    expect(d.diseases.active.pluck(:kind)).not_to include("malnutrition")
+  end
 end

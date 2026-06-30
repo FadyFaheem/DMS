@@ -3,6 +3,7 @@ class Dinosaur < ApplicationRecord
   belongs_to :habitat, optional: true
   belongs_to :parent_a, class_name: "Dinosaur", optional: true
   belongs_to :parent_b, class_name: "Dinosaur", optional: true
+  has_many :diseases, dependent: :destroy
 
   DIETS = %w[plants meat fish insects].freeze
   GENDERS = %w[male female].freeze

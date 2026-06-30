@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_30_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_020200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020000) do
     t.string "period"
     t.bigint "player_id", null: false
     t.string "preferred_terrain"
+    t.boolean "quarantined", default: false, null: false
     t.float "reproduction_readiness", default: 0.0, null: false
     t.integer "size_lbs", default: 0, null: false
     t.string "social_structure", default: "herd", null: false
@@ -61,6 +62,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020000) do
     t.index ["parent_a_id"], name: "index_dinosaurs_on_parent_a_id"
     t.index ["parent_b_id"], name: "index_dinosaurs_on_parent_b_id"
     t.index ["player_id"], name: "index_dinosaurs_on_player_id"
+  end
+
+  create_table "diseases", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "cured_at"
+    t.bigint "dinosaur_id", null: false
+    t.string "kind", null: false
+    t.datetime "started_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dinosaur_id", "cured_at"], name: "index_diseases_on_dinosaur_id_and_cured_at"
+    t.index ["dinosaur_id"], name: "index_diseases_on_dinosaur_id"
   end
 
   create_table "events", force: :cascade do |t|
@@ -127,6 +139,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_30_020000) do
   add_foreign_key "dinosaurs", "dinosaurs", column: "parent_b_id"
   add_foreign_key "dinosaurs", "habitats"
   add_foreign_key "dinosaurs", "players"
+  add_foreign_key "diseases", "dinosaurs"
   add_foreign_key "events", "players"
   add_foreign_key "food_productions", "players"
   add_foreign_key "habitats", "players"

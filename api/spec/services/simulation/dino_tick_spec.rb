@@ -34,6 +34,31 @@ RSpec.describe Simulation::DinoTick do
       .to change { player.events.where(kind: "death").count }.by(1)
   end
 
+  it "contracts scale rot in a crowded wetland and loses health to it" do
+    wetland = player.habitats.create!(name: "Bog", terrain: "wetland", capacity: 1)
+    sick = player.dinosaurs.create!(
+      DinoFactory.attributes_for(Species.find("parasaurolophus"), player:, habitat: wetland)
+        .merge(stats_updated_at: 5.hours.ago, hunger: 10, last_diet_quality: "preferred", health: 90)
+    )
+
+    described_class.call(sick, now: Time.current)
+
+    expect(sick.diseases.active.pluck(:kind)).to include("scale_rot")
+    expect(sick.reload.health).to be < 90
+  end
+
+  it "does not infect a quarantined dino" do
+    wetland = player.habitats.create!(name: "Bog", terrain: "wetland", capacity: 1)
+    safe = player.dinosaurs.create!(
+      DinoFactory.attributes_for(Species.find("parasaurolophus"), player:, habitat: wetland)
+        .merge(stats_updated_at: 5.hours.ago, quarantined: true)
+    )
+
+    described_class.call(safe, now: Time.current)
+
+    expect(safe.diseases.active).to be_empty
+  end
+
   it "advances the stats_updated_at watermark" do
     now = Time.current
     d = dino(stats_updated_at: 5.hours.ago)
