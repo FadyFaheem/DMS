@@ -4,6 +4,7 @@ import { PlayerProvider, useGame } from './context/PlayerContext';
 import AppLayout from './components/AppLayout';
 import ParkDashboardPage from './pages/ParkDashboardPage';
 import HabitatsPage from './pages/HabitatsPage';
+import SpeciesPage from './pages/SpeciesPage';
 import ResearchPage from './pages/ResearchPage';
 import ProductionPage from './pages/ProductionPage';
 import ProfilePage from './pages/ProfilePage';
@@ -35,6 +36,7 @@ function GameRoutes() {
       <Route element={<AppLayout />}>
         <Route index element={<ParkDashboardPage />} />
         <Route path="habitats" element={<HabitatsPage />} />
+        <Route path="species" element={<SpeciesPage />} />
         <Route path="research" element={<ResearchPage />} />
         <Route path="production" element={<ProductionPage />} />
         <Route path="profile" element={<ProfilePage />} />

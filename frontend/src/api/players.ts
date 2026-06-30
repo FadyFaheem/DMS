@@ -69,6 +69,52 @@ export interface ResearchState {
   catalog: ResearchTech[];
 }
 
+export interface SpeciesCatalogEntry {
+  key: string;
+  name: string;
+  period: string;
+  diet_primary: string;
+  diet_secondary: string | null;
+  preferred_terrain: string;
+  social_structure: string;
+  base_size_lbs: number;
+  rarity: string;
+  starter: boolean;
+  acquire_cost: number;
+  required_tech: string | null;
+  requires_population: number;
+  unlocked: boolean;
+  owned_count: number;
+}
+
+export interface SpeciesState {
+  periods: string[];
+  catalog: SpeciesCatalogEntry[];
+}
+
+export interface Attraction {
+  id: number;
+  kind: string;
+  name: string | null;
+  level: number;
+  income_per_day: number;
+  last_collected_at: string | null;
+}
+
+export interface AttractionCatalogEntry {
+  kind: string;
+  name: string;
+  income_per_day: number;
+  build_cost: number;
+  required_tech: string;
+  unlocked: boolean;
+}
+
+export interface AttractionsState {
+  built: Attraction[];
+  catalog: AttractionCatalogEntry[];
+}
+
 export interface FoodBuilding {
   id: number;
   kind: string;
@@ -148,8 +194,10 @@ export interface Player {
   dinosaurs: Dinosaur[];
   summary: ParkSummary;
   research: ResearchState;
+  species: SpeciesState;
   food_productions: FoodProductionState;
   structures: StructuresState;
+  attractions: AttractionsState;
   active_effects: ActiveEffect[];
   events: ParkEvent[];
 }

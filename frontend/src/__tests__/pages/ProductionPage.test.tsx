@@ -117,4 +117,56 @@ describe('ProductionPage', () => {
     expect(screen.getByText('120/210')).toBeInTheDocument();
     expect(screen.getByText(/Algal Bloom -60%/)).toBeInTheDocument();
   });
+
+  it('shows attractions with passive income and upgrades via the API', async () => {
+    const withAttractions = {
+      ...player,
+      attractions: {
+        built: [
+          {
+            id: 3,
+            kind: 'carousel',
+            name: 'Dino Carousel',
+            level: 2,
+            income_per_day: 120,
+            last_collected_at: null,
+          },
+        ],
+        catalog: [
+          {
+            kind: 'carousel',
+            name: 'Dino Carousel',
+            income_per_day: 60,
+            build_cost: 5000,
+            required_tech: 'attractions',
+            unlocked: true,
+          },
+        ],
+      },
+    };
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(withAttractions), { status: 200 }),
+    );
+
+    render(
+      <PlayerProvider>
+        <MemoryRouter>
+          <ProductionPage />
+        </MemoryRouter>
+      </PlayerProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Attractions')).toBeInTheDocument());
+    expect(screen.getByText(/Passive income: \+120\/day/)).toBeInTheDocument();
+    expect(screen.getByText('Lvl 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade' }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/attractions/3/upgrade',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+  });
 });

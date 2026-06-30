@@ -116,6 +116,9 @@ export default function ParkDashboardPage() {
       <BreedingModal
         open={breedOpen}
         dinos={player.dinosaurs}
+        traitSelectionUnlocked={
+          player.research?.unlocked?.includes('genetic_engineering_lab') ?? false
+        }
         onClose={() => setBreedOpen(false)}
         onChanged={refresh}
       />
@@ -149,6 +152,8 @@ function eventColor(
       return 'error';
     case 'research':
       return 'info';
+    case 'acquire':
+      return 'success';
     case 'build':
     case 'upgrade':
       return 'primary';

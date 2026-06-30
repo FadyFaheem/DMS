@@ -103,6 +103,13 @@ function TechCard({
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           {tech.description}
         </Typography>
+        {tech.unlocks.length > 0 && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+            {tech.unlocks.map((u) => (
+              <Chip key={u} size="small" variant="outlined" label={u.replace(/_/g, ' ')} />
+            ))}
+          </Stack>
+        )}
         {missingPrereqs.length > 0 && (
           <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 1 }}>
             Requires: {missingPrereqs.join(', ')}

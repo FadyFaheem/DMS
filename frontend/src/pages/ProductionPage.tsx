@@ -12,9 +12,16 @@ import {
   Typography,
 } from '@mui/material';
 import { useGame } from '../context/PlayerContext';
-import type { ActiveEffect, FoodBuilding, FoodBuildingCatalogEntry } from '../api/players';
+import type {
+  ActiveEffect,
+  Attraction,
+  AttractionCatalogEntry,
+  FoodBuilding,
+  FoodBuildingCatalogEntry,
+} from '../api/players';
 import { buildProduction, upgradeProduction } from '../api/production';
 import { buildStructure } from '../api/structures';
+import { buildAttraction, upgradeAttraction } from '../api/attractions';
 import { effectImpactLabel, effectLabel } from '../utils/effects';
 
 function storeLabel(column: string | null): string {
@@ -31,6 +38,10 @@ export default function ProductionPage() {
   const advancedUnlocked = player.research.unlocked.includes('advanced_farming');
   const facilities = player.structures?.catalog ?? [];
   const effects = player.active_effects ?? [];
+  const attractionsBuilt = player.attractions?.built ?? [];
+  const attractionCatalog = player.attractions?.catalog ?? [];
+  const builtAttractionKinds = new Set(attractionsBuilt.map((a) => a.kind));
+  const passiveIncome = attractionsBuilt.reduce((sum, a) => sum + a.income_per_day, 0);
 
   const run = async (key: string, action: () => Promise<unknown>) => {
     setBusy(key);
@@ -128,6 +139,52 @@ export default function ProductionPage() {
           </Grid>
         ))}
       </Grid>
+
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="baseline"
+        sx={{ mt: 3 }}
+        flexWrap="wrap"
+        useFlexGap
+      >
+        <Typography variant="h6" gutterBottom>
+          Attractions
+        </Typography>
+        {passiveIncome > 0 && (
+          <Typography variant="body2" color="text.secondary">
+            Passive income: +{passiveIncome.toLocaleString()}/day
+          </Typography>
+        )}
+      </Stack>
+      <Grid container spacing={2}>
+        {attractionCatalog.map((entry) => (
+          <Grid key={entry.kind} size={{ xs: 12, sm: 6, md: 4 }}>
+            <AttractionBuildCard
+              entry={entry}
+              built={builtAttractionKinds.has(entry.kind)}
+              affordable={player.currency >= entry.build_cost}
+              busy={busy === `attr-${entry.kind}`}
+              onBuild={() => run(`attr-${entry.kind}`, () => buildAttraction(entry.kind))}
+            />
+          </Grid>
+        ))}
+      </Grid>
+      {attractionsBuilt.length > 0 && (
+        <Grid container spacing={2} sx={{ mt: 0 }}>
+          {attractionsBuilt.map((attraction) => (
+            <Grid key={attraction.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <AttractionCard
+                attraction={attraction}
+                busy={busy === `attr-up-${attraction.id}`}
+                onUpgrade={() =>
+                  run(`attr-up-${attraction.id}`, () => upgradeAttraction(attraction.id))
+                }
+              />
+            </Grid>
+          ))}
+        </Grid>
+      )}
     </Box>
   );
 }
@@ -236,6 +293,81 @@ function FarmCard({
           onClick={onUpgrade}
         >
           {canUpgrade ? 'Upgrade' : 'Needs Advanced Farming'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AttractionBuildCard({
+  entry,
+  built,
+  affordable,
+  busy,
+  onBuild,
+}: {
+  entry: AttractionCatalogEntry;
+  built: boolean;
+  affordable: boolean;
+  busy: boolean;
+  onBuild: () => void;
+}) {
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6">{entry.name}</Typography>
+          <Chip size="small" label={entry.build_cost.toLocaleString()} />
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          +{entry.income_per_day.toLocaleString()}/day currency
+        </Typography>
+        {!entry.unlocked && (
+          <Typography variant="caption" color="warning.main" display="block" sx={{ mt: 1 }}>
+            Requires: {entry.required_tech}
+          </Typography>
+        )}
+        <Button
+          sx={{ mt: 1.5 }}
+          size="small"
+          variant="contained"
+          disabled={built || !entry.unlocked || !affordable || busy}
+          onClick={onBuild}
+        >
+          {built ? 'Built' : 'Build'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AttractionCard({
+  attraction,
+  busy,
+  onUpgrade,
+}: {
+  attraction: Attraction;
+  busy: boolean;
+  onUpgrade: () => void;
+}) {
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6">{attraction.name}</Typography>
+          <Chip size="small" color="primary" label={`Lvl ${attraction.level}`} />
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          +{attraction.income_per_day.toLocaleString()}/day currency
+        </Typography>
+        <Button
+          sx={{ mt: 1.5 }}
+          size="small"
+          variant="outlined"
+          disabled={busy}
+          onClick={onUpgrade}
+        >
+          Upgrade
         </Button>
       </CardContent>
     </Card>

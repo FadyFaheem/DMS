@@ -36,6 +36,16 @@ const player = {
         unlocks: [],
         unlocked: false,
       },
+      {
+        key: 'genetic_engineering_lab',
+        name: 'Genetic Engineering Lab',
+        description: 'Choose a guaranteed mutation for bred offspring.',
+        cost: 9000,
+        prerequisites: ['genetic_trait_viewing', 'mutation_rate_boost'],
+        requires_population: 0,
+        unlocks: ['trait_selection'],
+        unlocked: false,
+      },
     ],
   },
 };
@@ -61,5 +71,21 @@ describe('ResearchPage', () => {
     await waitFor(() => expect(screen.getByText('Plant Farming')).toBeInTheDocument());
     expect(screen.getByText('Advanced Farming')).toBeInTheDocument();
     expect(screen.getByText(/Requires: plant_farming/)).toBeInTheDocument();
+  });
+
+  it('renders an expanded-tree tech with its effects and prerequisites', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(player), { status: 200 }));
+
+    render(
+      <PlayerProvider>
+        <MemoryRouter>
+          <ResearchPage />
+        </MemoryRouter>
+      </PlayerProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Genetic Engineering Lab')).toBeInTheDocument());
+    expect(screen.getByText('trait selection')).toBeInTheDocument();
+    expect(screen.getByText(/Requires: genetic_trait_viewing/)).toBeInTheDocument();
   });
 });

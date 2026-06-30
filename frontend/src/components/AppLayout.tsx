@@ -40,6 +40,7 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { label: 'Park', basePath: '/', tabs: [{ label: 'Overview', path: '/' }] },
   { label: 'Habitats', basePath: '/habitats' },
+  { label: 'Species', basePath: '/species' },
   { label: 'Research', basePath: '/research' },
   { label: 'Production', basePath: '/production' },
   { label: 'Profile', basePath: '/profile' },
