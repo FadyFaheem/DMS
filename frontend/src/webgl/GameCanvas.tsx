@@ -8,6 +8,7 @@ import { SCREENS, type ScreenId } from './screensConfig';
 import { WebglStateProvider, useWebgl } from './WebglState';
 import ParkWorld from './world/ParkWorld';
 import ParkHud from './screens/ParkHud';
+import HabitatsScreen from './screens/HabitatsScreen';
 import TopBar from './ui/TopBar';
 import OnboardingPanel from './ui/OnboardingPanel';
 import InfoPanel from './ui/InfoPanel';
@@ -93,12 +94,16 @@ function GameContent() {
     body = (
       <>
         <TopBar />
-        <Centered>
-          <InfoPanel
-            title={`${screenLabel(screen)} - coming soon`}
-            message="This screen is being rebuilt in 3D in an upcoming update."
-          />
-        </Centered>
+        {screen === 'habitats' ? (
+          <HabitatsScreen />
+        ) : (
+          <Centered>
+            <InfoPanel
+              title={`${screenLabel(screen)} - coming soon`}
+              message="This screen is being rebuilt in 3D in an upcoming update."
+            />
+          </Centered>
+        )}
       </>
     );
   }
